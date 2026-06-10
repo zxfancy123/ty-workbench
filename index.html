@@ -729,6 +729,37 @@
     background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 8px 12px; margin-bottom: 14px; box-shadow: var(--shadow);
   }
+  /* ---------- 评级通讯记录（谁·何时·何评级） ---------- */
+  .cr-badge {
+    font-size: 11px; border-radius: 5px; padding: 2px 8px; cursor: pointer;
+    color: #fff; background: var(--crc, #6b7280); display: inline-flex;
+    gap: 4px; align-items: center; white-space: nowrap; font-weight: 600;
+  }
+  .cr-badge .who { opacity: .85; font-weight: 400; }
+  .cr-badge .chev3 { opacity: .8; font-size: 10px; }
+  .cr-add {
+    font-size: 11px; color: var(--accent); cursor: pointer; white-space: nowrap;
+    border: 1px dashed #c7d2fe; border-radius: 5px; padding: 1.5px 7px; background: #fff;
+  }
+  .cr-add:hover { background: #eef2ff; }
+  .cr-hist {
+    background: #fafbfc; border: 1px solid var(--border); border-left: 3px solid #c7d2fe;
+    border-radius: 8px; padding: 5px 10px; margin: 4px 0 8px;
+  }
+  .cr-hist-row { display: flex; gap: 8px; align-items: center; font-size: 11.5px; padding: 3.5px 0; }
+  .cr-hist-row + .cr-hist-row { border-top: 1px dashed #eceef2; }
+  .cr-hist-row .r { font-weight: 700; color: var(--crc); white-space: nowrap; min-width: 58px; }
+  .cr-hist-row .w { color: var(--muted); white-space: nowrap; }
+  .cr-hist-row .n { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cr-hist-row .x { cursor: pointer; color: #b91c1c; opacity: .55; }
+  .cr-hist-row .x:hover { opacity: 1; }
+  .cr-opts { display: flex; gap: 8px; }
+  .cr-opt {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 0;
+    text-align: center; cursor: pointer; font-size: 12.5px;
+  }
+  .cr-opt:hover { border-color: var(--co); }
+  .cr-opt.on { border-color: var(--co); color: var(--co); background: #fff; font-weight: 700; box-shadow: 0 0 0 1px var(--co) inset; }
   .cov-legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
   .cov-theme { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
   .cov-theme-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #f7f7f9; border-bottom: 1px solid var(--border); cursor: pointer; }
@@ -990,6 +1021,32 @@
     <div class="modal-foot">
       <button class="btn" onclick="closeRfModal()">取消</button>
       <button class="btn primary" id="rfSaveBtn" onclick="rfSave()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!--  覆盖看板 · 评级弹窗（谁-何时-何评级 通讯记录）                          -->
+<!-- ====================================================================== -->
+<div class="overlay" id="crModal">
+  <div class="modal" style="width:430px;">
+    <div class="modal-head">
+      <span class="t" id="crModalHead">评级</span>
+      <span class="x" onclick="closeCovRate()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>我的评级（记录人和时间自动记录）</label>
+        <div class="cr-opts" id="crOpts"></div>
+      </div>
+      <div class="field">
+        <label>一句话理由（可选）</label>
+        <input class="search" id="crNote" style="width:100%" placeholder="如：景气度上修 / 订单能见度到明年 / 估值太贵…" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeCovRate()">取消</button>
+      <button class="btn primary" id="crSaveBtn" onclick="saveCovRate()">保存</button>
     </div>
   </div>
 </div>
@@ -1277,6 +1334,7 @@ function startApp(){
   buildFilters();
   loadPosts();
   loadFramework();
+  loadCovRatings();
   subscribeRealtime();
 }
 
@@ -1343,6 +1401,10 @@ function subscribeRealtime(){
   // 行业研究框架实时同步
   sb.channel('rf-rt')
     .on('postgres_changes',{event:'*',schema:'public',table:'research_framework'},()=>loadFramework())
+    .subscribe();
+  // 覆盖看板评级记录实时同步
+  sb.channel('cr-rt')
+    .on('postgres_changes',{event:'*',schema:'public',table:'cov_ratings'},()=>loadCovRatings())
     .subscribe();
 
   // ② 兜底：每 30 秒静默拉一次（防止 WebSocket 静默断开后看不到他人变更）
@@ -1817,6 +1879,8 @@ function defaultCoverage(){
       {name:'光通信/光模块', stocks:['中际旭创','新易盛','天孚通信','光迅科技'].map(covMk)},
       {name:'算力芯片', stocks:['寒武纪','海光信息','工业富联'].map(covMk)},
       {name:'存储', stocks:['兆易创新','江波龙'].map(covMk)},
+      {name:'半导体设备', stocks:['北方华创','中微公司','拓荆科技'].map(covMk)},
+      {name:'消费电子', stocks:['立讯精密','蓝思科技','歌尔股份'].map(covMk)},
     ]},
     {name:'具身智能', subs:[
       {name:'本体/总成', stocks:[]},
@@ -1825,7 +1889,9 @@ function defaultCoverage(){
     {name:'能源革命', subs:[
       {name:'锂电池', stocks:['宁德时代','亿纬锂能','国轩高科'].map(covMk)},
       {name:'锂矿', stocks:['天齐锂业','赣锋锂业','盐湖股份'].map(covMk)},
-      {name:'光伏/逆变器', stocks:['阳光电源','隆基绿能','德业股份'].map(covMk)},
+      {name:'光伏', stocks:['隆基绿能'].map(covMk)},
+      {name:'储能/逆变器', stocks:['阳光电源','德业股份'].map(covMk)},
+      {name:'配网', stocks:['国电南瑞','思源电气','许继电气'].map(covMk)},
     ]},
     JSON.parse(JSON.stringify(COV_SPACE_THEME)),
     {name:'医药', subs:[
@@ -1850,6 +1916,31 @@ let coverage; try{ coverage = JSON.parse(localStorage.getItem('ty_coverage')) ||
     coverage.themes.push(JSON.parse(JSON.stringify(COV_NA_THEME)));
     changed=true;
   }
+  // 补新细分（按名字判重，不动用户自己加的内容）
+  const ensureSub=(themeName, subName, seedStocks, pos)=>{
+    const th=coverage.themes.find(t=>t.name===themeName); if(!th) return;
+    if(th.subs.some(s=>s.name===subName)) return;
+    const sub={name:subName, stocks:(seedStocks||[]).map(covMk)};
+    (pos===undefined||pos>=th.subs.length) ? th.subs.push(sub) : th.subs.splice(pos,0,sub);
+    changed=true;
+  };
+  ensureSub('AI','半导体设备',['北方华创','中微公司','拓荆科技']);
+  ensureSub('AI','消费电子',['立讯精密','蓝思科技','歌尔股份']);
+  // 能源革命：老的「光伏/逆变器」拆成「光伏」+「储能/逆变器」（逆变器公司挪去和储能放一起）
+  const er=coverage.themes.find(t=>t.name==='能源革命');
+  if(er){
+    const old=er.subs.find(s=>s.name==='光伏/逆变器');
+    if(old && !er.subs.some(s=>s.name==='储能/逆变器')){
+      const isInverter=n=>/阳光电源|德业|锦浪|固德威|禾迈|昱能/.test(n);
+      const inv=old.stocks.filter(s=>isInverter(s.n));
+      old.stocks=old.stocks.filter(s=>!isInverter(s.n));
+      old.name='光伏';
+      er.subs.splice(er.subs.indexOf(old)+1, 0, {name:'储能/逆变器', stocks:inv.length?inv:['阳光电源','德业股份'].map(covMk)});
+      changed=true;
+    }
+    ensureSub('能源革命','储能/逆变器',['阳光电源','德业股份']);
+    ensureSub('能源革命','配网',['国电南瑞','思源电气','许继电气']);
+  }
   // 按规定顺序重排已知主题；自定义主题保持原相对顺序排在后面，北美科技永远垫底
   const ORDER=['AI','具身智能','能源革命','商业航天','医药'];
   const known=ORDER.map(n=>coverage.themes.find(t=>t.name===n)).filter(Boolean);
@@ -1867,9 +1958,99 @@ const covF = { kw:'', op:'', state:'', owner:'' };
 function covFActive(){ return !!(covF.kw || covF.op || covF.state || covF.owner); }
 function covFSet(field,val){ covF[field]=val; render(); }
 function covFClear(){ covF.kw=''; covF.op=''; covF.state=''; covF.owner=''; render(); }
+/* ---------- 评级通讯记录（云端 cov_ratings 表：谁·何时·何评级） ---------- */
+let covRatings=[], covRatingsErr=null;
+let covRateOpen=new Set();                 // 展开历史的 'level|target'
+let crLevel=null, crTarget=null, crPick=null;
+const CR_LEVELS={theme:'主题', sub:'细分', stock:'个股'};
+const CR_COLORS={'非常看好':'#16a34a','值得细化':'#b45309','没什么意思':'#6b7280'};
+async function loadCovRatings(){
+  if(!sb) return;
+  try{
+    const { data, error } = await sb.from('cov_ratings').select('*').order('created_at',{ascending:false});
+    if(error){ covRatingsErr=error; } else { covRatings=data||[]; covRatingsErr=null; }
+  }catch(e){ covRatingsErr=e; }
+  if(layoutMode==='coverage') render();
+}
+function crFor(level,target){ return covRatings.filter(r=>r.level===level && r.target===target); }
+function covOpOf(st){ const l=crFor('stock',st.n)[0]; return l ? l.rating : (st.status||''); }
+function crKey(level,target){ return level+'|'+target; }
+function crToggleHist(level,target){
+  const k=crKey(level,target);
+  covRateOpen.has(k)?covRateOpen.delete(k):covRateOpen.add(k);
+  render();
+}
+// 折叠态：只显示最新一条「评级 · 谁 · 何时 ▾」；点徽章下拉看历史
+function crBadgeHtml(level,target,legacy){
+  const list=crFor(level,target);
+  const latest=list[0];
+  const add=`<span class="cr-add" title="添加我的评级" onclick="event.stopPropagation();openCovRate('${escapeHtml(level)}','${escapeHtml(target)}')">＋评级</span>`;
+  if(!latest){
+    if(legacy) return `<span class="cr-badge" style="--crc:${CR_COLORS[legacy]||'#6b7280'}" title="旧版本地评级（无记录人），点＋评级补一条云端记录">${escapeHtml(legacy)} · 旧</span>${add}`;
+    return add;
+  }
+  const open=covRateOpen.has(crKey(level,target));
+  return `<span class="cr-badge" style="--crc:${CR_COLORS[latest.rating]||'#6b7280'}"
+    title="${list.length} 条评级记录，点击${open?'收起':'展开'}历史"
+    onclick="event.stopPropagation();crToggleHist('${escapeHtml(level)}','${escapeHtml(target)}')">
+    ${escapeHtml(latest.rating)}<span class="who">· ${escapeHtml(latest.author)} · ${covAgo(Date.parse(latest.created_at))}</span>
+    <span class="chev3">${open?'▴':'▾'}${list.length>1?' '+list.length:''}</span></span>${add}`;
+}
+// 展开态：通讯记录式的历史列表（最新在上）
+function crHistHtml(level,target){
+  if(!covRateOpen.has(crKey(level,target))) return '';
+  const list=crFor(level,target);
+  if(!list.length) return '';
+  const rows=list.map(r=>`<div class="cr-hist-row" style="--crc:${CR_COLORS[r.rating]||'#6b7280'}">
+      <span class="r">${escapeHtml(r.rating)}</span>
+      <span class="w">${escapeHtml(r.author)} · ${covAgo(Date.parse(r.created_at))}（${new Date(r.created_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}）</span>
+      <span class="n">${escapeHtml(r.note||'')}</span>
+      ${r.author===myName?`<span class="x" title="撤回我的这条评级" onclick="event.stopPropagation();crDelete('${r.id}')">✕</span>`:''}
+    </div>`).join('');
+  return `<div class="cr-hist">${rows}</div>`;
+}
+function openCovRate(level,target){
+  if(covRatingsErr && /relation|does not exist|42P01|schema cache|not find/i.test(covRatingsErr.message||'')){
+    alert('评级记录表还没建。请在 Supabase 的 SQL Editor 运行文件夹里的【升级补丁-7-覆盖评级记录.sql】（只需一次），刷新即可使用。');
+    return;
+  }
+  crLevel=level; crTarget=target; crPick=null;
+  document.getElementById('crModalHead').textContent='评级 · '+(CR_LEVELS[level]||'')+' · '+target;
+  document.getElementById('crNote').value='';
+  renderCrOpts();
+  document.getElementById('crModal').classList.add('show');
+}
+function renderCrOpts(){
+  document.getElementById('crOpts').innerHTML=Object.keys(CR_COLORS).map(r=>
+    `<div class="cr-opt${crPick===r?' on':''}" style="--co:${CR_COLORS[r]}" onclick="crPick='${r}';renderCrOpts()">${r}</div>`).join('');
+}
+function closeCovRate(){ document.getElementById('crModal').classList.remove('show'); crLevel=null; crTarget=null; }
+async function saveCovRate(){
+  if(!crPick){ alert('请先选一个评级'); return; }
+  const btn=document.getElementById('crSaveBtn'); btn.disabled=true; btn.textContent='保存中…';
+  try{
+    const note=document.getElementById('crNote').value.trim();
+    const { error } = await sb.from('cov_ratings').insert({
+      level:crLevel, target:crTarget, author:myName, rating:crPick, note:note||null });
+    if(error) throw error;
+    covRateOpen.add(crKey(crLevel,crTarget));   // 评完顺手展开，能看到自己这条
+    closeCovRate(); await loadCovRatings();
+  }catch(e){ alert('保存失败：'+(e.message||e)); }
+  finally{ btn.disabled=false; btn.textContent='保存'; }
+}
+async function crDelete(id){
+  if(!confirm('撤回这条评级记录？')) return;
+  try{
+    const { data: rows, error } = await sb.from('cov_ratings').delete().eq('id',id).select('id');
+    if(error) throw error;
+    if(!rows||rows.length===0){ alert('删除没有生效：请重跑 升级补丁-7-覆盖评级记录.sql 开启删除权限。'); return; }
+    await loadCovRatings();
+  }catch(e){ alert('删除失败：'+(e.message||e)); }
+}
+
 function covStockPass(st){
   if(covF.kw && !covNorm(st.n).toLowerCase().includes(covNorm(covF.kw).toLowerCase())) return false;
-  if(covF.op && (st.status||'（待评）')!==covF.op && !(covF.op==='（待评）'&&!st.status)) return false;
+  if(covF.op){ const op=covOpOf(st); if((op||'（待评）')!==covF.op && !(covF.op==='（待评）'&&!op)) return false; }
   if(covF.owner && st.owner!==covF.owner) return false;
   if(covF.state){
     const ss=covStat(st.n);
@@ -1948,11 +2129,12 @@ function renderCoverage(){
         <span class="nm">${escapeHtml(th.name)}</span>
         <span class="cov-sum">${covered}/${total} 龙头已覆盖</span>
         <span class="cov-bar"><i style="width:${pct}%"></i></span>
+        ${crBadgeHtml('theme',th.name)}
         <span style="flex:1"></span>
         <button class="cov-mini" onclick="event.stopPropagation();covAddSub(${ti})">＋ 细分</button>
         <span class="cov-x" title="删除主题" onclick="event.stopPropagation();covDelTheme(${ti})">🗑</span>
       </div>
-      <div class="cov-theme-body">`;
+      <div class="cov-theme-body">${crHistHtml('theme',th.name)}`;
     if(th.subs.length===0) html+=`<div class="cov-empty">还没有细分，点「＋ 细分」添加。</div>`;
     th.subs.forEach((sub,si)=>{
       if(covFActive() && !sub.stocks.some(covStockPass)) return;
@@ -1963,6 +2145,7 @@ function renderCoverage(){
       const subStale = sub.stocks.length>0 && (Date.now()-subLatest)/864e5 > COV_SUB_STALE_DAYS; // subLatest=0 时差值极大→stale
       const subWarn = subStale ? `<span class="cov-warn">⚠ ${subLatest? covAgo(subLatest)+'无更新' : '尚无更新'}</span>` : '';
       const subPeople = subAuth.size ? `<span class="cov-meta">更新者：${escapeHtml([...subAuth].join('、'))}</span>` : '';
+      const subTgt=th.name+'/'+sub.name;
       html+=`<div class="cov-sub${scol?' collapsed':''}${subStale?' stale':''}">
         <div class="cov-sub-head" onclick="covToggle('${skey}')">
           <span class="chev2 s">▼</span>
@@ -1970,11 +2153,12 @@ function renderCoverage(){
           <span class="cov-sum">${sub.stocks.length} 只 · ${scov} 已覆盖</span>
           ${subWarn}
           ${subPeople}
+          ${crBadgeHtml('sub',subTgt)}
           <span style="flex:1"></span>
           <button class="cov-mini" onclick="event.stopPropagation();covStartAdd(${ti},${si})">＋ 个股</button>
           <span class="cov-x" title="删除细分" onclick="event.stopPropagation();covDelSub(${ti},${si})">🗑</span>
         </div>
-        <div class="cov-sub-body">`;
+        <div class="cov-sub-body">${crHistHtml('sub',subTgt)}`;
       if(sub.stocks.length===0 && covAdding!==ti+'-'+si) html+=`<div class="cov-empty">暂无个股</div>`;
       sub.stocks.forEach((st,sti)=>{
         if(covFActive() && !covStockPass(st)) return;
@@ -1988,19 +2172,15 @@ function renderCoverage(){
           meta=`<span class="cov-meta">最近 ${escapeHtml(ss.latestTime)}（${covAgo(ss.latestTs)}）· ${escapeHtml(ss.authors.join('、'))}${stStale?' · 超6个月未更新':''}</span>`;
         }
         const ownerOpts=['<option value="">未指派</option>'].concat(users.map(u=>`<option value="${u.n}"${st.owner===u.n?' selected':''}>${u.n}</option>`)).join('');
-        const opv=st.status||'';
-        const opCls = opv==='非常看好'?'op-good':opv==='值得细化'?'op-worth':opv==='没什么意思'?'op-meh':'';
-        const opOpts=[['','（待评）'],['值得细化','值得细化'],['非常看好','非常看好'],['没什么意思','没什么意思']]
-          .map(o=>`<option value="${o[0]}"${opv===o[0]?' selected':''}>${o[1]}</option>`).join('');
         html+=`<div class="cov-stock${stStale?' stale':''}">
           <span class="nm">${escapeHtml(st.n)}</span>
           ${badge}
           ${meta}
           <span style="flex:1"></span>
+          ${crBadgeHtml('stock',st.n,st.status)}
           <select title="负责人" onchange="covSet(${ti},${si},${sti},'owner',this.value)">${ownerOpts}</select>
-          <select class="cov-op ${opCls}" title="观点" onchange="covSet(${ti},${si},${sti},'status',this.value)">${opOpts}</select>
           <span class="cov-x" title="移除个股" onclick="covDelStock(${ti},${si},${sti})">✕</span>
-        </div>`;
+        </div>${crHistHtml('stock',st.n)}`;
       });
       if(covAdding===ti+'-'+si){
         html+=`<div class="cov-stock"><input class="cov-add-input" id="covAddInput" list="leaderPool" placeholder="输入个股名回车添加（可顿号分隔多个）" onkeydown="covAddKey(event,${ti},${si})" onblur="covAddBlur()"></div>`;
