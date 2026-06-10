@@ -133,8 +133,8 @@
   /* ---------- 主体 ---------- */
   .main { flex: 1; display: flex; overflow: hidden; }
   .board {
-    flex: 1; display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 12px; padding: 14px; overflow: hidden;
+    flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    gap: 12px; padding: 14px; overflow-x: auto; overflow-y: hidden;
   }
   .column { background: #ececef; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
   .col-head {
@@ -651,6 +651,57 @@
 
   /* ---------- 列表模式 ---------- */
   .board.list-mode { display: block; padding: 14px; overflow: auto; background: var(--bg); }
+
+  /* ---------- 📅 日历视图 ---------- */
+  .board.calendar-mode { display: block; padding: 16px; overflow-y: auto; background: var(--bg); }
+  .cal-view { max-width: 1080px; margin: 0 auto; }
+  .cal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .cal-title { font-size: 16px; font-weight: 700; }
+  .cal-nav-btn {
+    width: 28px; height: 28px; border: 1px solid var(--border); background: #fff;
+    border-radius: 7px; cursor: pointer; font-size: 12px; font-family: inherit;
+  }
+  .cal-nav-btn:hover { background: #f7f7f9; }
+  .cal-today-btn { height: 28px; padding: 0 12px; border: 1px solid var(--border); background: #fff; border-radius: 7px; cursor: pointer; font-size: 12px; font-family: inherit; }
+  .cal-today-btn:hover { background: #f7f7f9; }
+  .cal-sum { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+  .cal-sum-chip { font-size: 11px; border-radius: 5px; padding: 2px 8px; color: #fff; font-weight: 600; }
+  .cal-sum-total { font-size: 12px; color: var(--muted); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    background: transparent;
+  }
+  .cal-dow { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; font-weight: 600; }
+  .cal-cell {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 9px;
+    min-height: 86px; padding: 6px 7px; cursor: pointer; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 4px; overflow: hidden;
+  }
+  .cal-cell:hover { border-color: #c7d2fe; }
+  .cal-cell.blank { background: transparent; border: none; box-shadow: none; cursor: default; }
+  .cal-cell.today { border-color: var(--accent); border-width: 1.5px; }
+  .cal-cell.sel { background: #eef2ff; border-color: var(--accent); }
+  .cal-date { font-size: 11.5px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .cal-cell.today .cal-date { color: var(--accent); }
+  .cal-date .n-total { margin-left: auto; font-size: 10px; color: var(--muted); font-weight: 400; }
+  .cal-chip {
+    font-size: 10.5px; border-radius: 4px; padding: 1.5px 6px; color: #fff;
+    font-weight: 600; display: flex; align-items: center; gap: 4px; width: fit-content; line-height: 1.5;
+  }
+  .cal-day-panel {
+    margin-top: 14px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .cal-day-panel h4 { font-size: 13px; margin-bottom: 8px; }
+  .cal-day-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px;
+    cursor: pointer; font-size: 12.5px;
+  }
+  .cal-day-item:hover { background: #f4f5f7; }
+  .cal-day-item .dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+  .cal-day-item .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-day-item .meta { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .cal-day-empty { color: var(--muted); font-size: 12px; padding: 8px 0; }
   .list-view { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; box-shadow: var(--shadow); }
   .list-count { padding: 9px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); }
   .list-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -673,6 +724,11 @@
   .cov-toolbar .cov-title { font-size: 15px; font-weight: 700; }
   .cov-toolbar .cov-hint { font-size: 11px; color: var(--muted); }
   .cov-toolbar .legend { margin-left: auto; display: flex; gap: 12px; font-size: 11px; color: var(--muted); align-items: center; }
+  .cov-filterbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 12px; margin-bottom: 14px; box-shadow: var(--shadow);
+  }
   .cov-legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
   .cov-theme { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
   .cov-theme-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #f7f7f9; border-bottom: 1px solid var(--border); cursor: pointer; }
@@ -754,6 +810,7 @@
   <button class="btn" id="dlSelectedBtn" onclick="downloadSelectedMd()" title="把勾选的卡片打包成 Markdown 文件下载，可上传到 claude.ai">📥 下载选中 <span id="selCount" style="background:#eef2ff;color:var(--accent);border-radius:10px;padding:0 7px;margin-left:4px;font-size:11px;">0</span></button>
   <button class="btn" id="layoutBtn" onclick="toggleLayout()" title="切换布局">🔲 平铺</button>
   <button class="btn" id="listBtn" onclick="toggleList()" title="列表 / 卡片模式切换">📋 列表</button>
+  <button class="btn" id="calBtn" onclick="switchMode('calendar')" title="按月历查看大家每天上传了什么主题的信息">📅 日历</button>
   <button class="btn" id="coverageBtn" onclick="toggleCoverage()" title="研究覆盖看板（拆缺补漏 / 进度）">🗺️ 研究覆盖</button>
   <button class="btn" id="frameworkBtn" onclick="goMode('framework')" title="行业研究框架（协同工作流）">🧭 框架</button>
   <button class="btn" id="homeBtn" onclick="goMode('home')" title="开始页面">🏠 首页</button>
@@ -857,7 +914,7 @@
       <div class="field-row">
         <div class="field">
           <label>零级行业</label>
-          <select id="mL0"><option>AI</option><option>能源革命</option><option>具身智能</option><option>医药</option></select>
+          <select id="mL0"><option>AI</option><option>具身智能</option><option>能源革命</option><option>商业航天</option><option>医药</option></select>
         </div>
         <div class="field">
           <label>一级行业</label>
@@ -1095,8 +1152,9 @@ const users = [
 ];
 const columns = [
   {key:'AI',      swatch:'#6366f1'},
-  {key:'能源革命', swatch:'#16a34a'},
   {key:'具身智能', swatch:'#ea580c'},
+  {key:'能源革命', swatch:'#16a34a'},
+  {key:'商业航天', swatch:'#0284c7'},
   {key:'医药',    swatch:'#e11d48'}
 ];
 const allL2 = ['PCB','光通信','CPO','算力租赁','液冷','AIDC','锂电池','光伏','储能',
@@ -1455,11 +1513,13 @@ function render(){
   board.classList.toggle('coverage-mode', layoutMode==='coverage');
   board.classList.toggle('home-mode', layoutMode==='home');
   board.classList.toggle('framework-mode', layoutMode==='framework');
+  board.classList.toggle('calendar-mode', layoutMode==='calendar');
 
   if(layoutMode==='home'){ renderHome(); return; }
   if(layoutMode==='framework'){ renderFramework(); return; }
   if(layoutMode==='list'){ renderList(sort); return; }
   if(layoutMode==='coverage'){ renderCoverage(); return; }
+  if(layoutMode==='calendar'){ renderCalendar(); return; }
 
   // 当前要显示的 columns（受 l0 筛选影响）
   const visibleCols=columns.filter(c=>!F.l0.size || F.l0.has(c.key));
@@ -1560,6 +1620,8 @@ function updateLayoutButtons(){
     cb.classList.toggle('primary', layoutMode==='coverage');
     cb.innerHTML = layoutMode==='coverage' ? '🗺️ 覆盖中' : '🗺️ 研究覆盖';
   }
+  const calB=document.getElementById('calBtn');
+  if(calB) calB.classList.toggle('primary', layoutMode==='calendar');
   const fb=document.getElementById('frameworkBtn');
   if(fb) fb.classList.toggle('primary', layoutMode==='framework');
   const hb=document.getElementById('homeBtn');
@@ -1638,12 +1700,116 @@ function renderList(sort){
 }
 
 /* ====================================================================== */
+/*  📅 日历视图：一目了然这个月大家都在上传什么                              */
+/* ====================================================================== */
+let calY=null, calM=null, calSelDay=null;   // calM: 0-11；calSelDay: 'YYYY-MM-DD'
+function calNav(d){ calM+=d; if(calM<0){calM=11;calY--;} if(calM>11){calM=0;calY++;} calSelDay=null; render(); }
+function calGoToday(){ const n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); calSelDay=null; render(); }
+function calPick(dstr){ calSelDay = calSelDay===dstr ? null : dstr; render(); }
+function calDayKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderCalendar(){
+  const board=document.getElementById('board');
+  if(calY===null){ const n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); }
+  const colMap={}; columns.forEach(c=>colMap[c.key]=c.swatch);
+  const swatch=l0=>colMap[l0]||'#94a3b8';
+  // 顶部筛选同样生效
+  const vis=posts.filter(p=>(!F.l0.size||F.l0.has(p.l0)) && passFilter(p));
+  // 当月条目按"天"归桶
+  const byDay={};
+  vis.forEach(p=>{
+    const d=new Date(p.ts);
+    if(d.getFullYear()!==calY || d.getMonth()!==calM) return;
+    (byDay[calDayKey(d)]=byDay[calDayKey(d)]||[]).push(p);
+  });
+  const monthPosts=Object.values(byDay).flat();
+  // 月度主题汇总（chips）
+  const sumByL0={};
+  monthPosts.forEach(p=>{ sumByL0[p.l0]=(sumByL0[p.l0]||0)+1; });
+  const sumChips=columns.filter(c=>sumByL0[c.key])
+    .map(c=>`<span class="cal-sum-chip" style="background:${c.swatch}">${c.key} ${sumByL0[c.key]}</span>`)
+    .concat(Object.keys(sumByL0).filter(k=>!colMap[k]).map(k=>`<span class="cal-sum-chip" style="background:#94a3b8">${escapeHtml(k)} ${sumByL0[k]}</span>`))
+    .join('');
+  // 网格：周一开头
+  const first=new Date(calY,calM,1);
+  const daysInMonth=new Date(calY,calM+1,0).getDate();
+  const lead=(first.getDay()+6)%7;          // 月初前的空格数
+  const todayKey=calDayKey(new Date());
+  let cells='';
+  for(let i=0;i<lead;i++) cells+='<div class="cal-cell blank"></div>';
+  for(let day=1;day<=daysInMonth;day++){
+    const dstr=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const ps=byDay[dstr]||[];
+    // 每天按主题聚合成色块：「AI ×3」
+    const g={}; ps.forEach(p=>{ g[p.l0]=(g[p.l0]||0)+1; });
+    const chips=Object.keys(g).sort((a,b)=>g[b]-g[a]).slice(0,4)
+      .map(k=>`<span class="cal-chip" style="background:${swatch(k)}">${escapeHtml(k)} ×${g[k]}</span>`).join('');
+    const more=Object.keys(g).length>4?`<span style="font-size:10px;color:var(--muted)">还有 ${Object.keys(g).length-4} 类…</span>`:'';
+    const cls=['cal-cell', dstr===todayKey?'today':'', dstr===calSelDay?'sel':''].filter(Boolean).join(' ');
+    cells+=`<div class="${cls}" onclick="calPick('${dstr}')">
+      <div class="cal-date">${day}${dstr===todayKey?' · 今天':''}${ps.length?`<span class="n-total">${ps.length} 条</span>`:''}</div>
+      ${chips}${more}
+    </div>`;
+  }
+  // 选中某天 → 下方明细（点条目打开详情）
+  let panel='';
+  if(calSelDay){
+    const ps=(byDay[calSelDay]||[]).slice().sort((a,b)=>b.ts-a.ts);
+    panel=`<div class="cal-day-panel">
+      <h4>📌 ${calSelDay}（${ps.length} 条）</h4>
+      ${ps.length?ps.map(p=>`<div class="cal-day-item" onclick="openDetailById('${p.id}')">
+          <span class="dot" style="background:${swatch(p.l0)}"></span>
+          <span class="t">${escapeHtml(listTitle(p))}</span>
+          <span class="meta">${escapeHtml(p.author||'')} · ${escapeHtml(p.l0||'')}${p.stock?' · '+escapeHtml(p.stock):''}</span>
+        </div>`).join(''):'<div class="cal-day-empty">这一天没有上传。</div>'}
+    </div>`;
+  }
+  const dows=['一','二','三','四','五','六','日'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  board.innerHTML=`<div class="cal-view">
+    <div class="cal-head">
+      <span class="cal-title">📅 ${calY} 年 ${calM+1} 月</span>
+      <button class="cal-nav-btn" onclick="calNav(-1)" title="上一月">◀</button>
+      <button class="cal-nav-btn" onclick="calNav(1)" title="下一月">▶</button>
+      <button class="cal-today-btn" onclick="calGoToday()">回到本月</button>
+      <span class="cal-sum">${sumChips}<span class="cal-sum-total">本月共 ${monthPosts.length} 条</span></span>
+    </div>
+    <div class="cal-grid">${dows}${cells}</div>
+    ${panel}
+    <div style="margin-top:10px;font-size:11px;color:var(--muted)">点某一天查看当天明细；色块 = 当天该主题的上传条数；顶部筛选（研究员 / 行业 / 个股 / 关键词）同样生效。</div>
+  </div>`;
+}
+
+/* ====================================================================== */
 /*  研究覆盖看板（思维导图 · 本地版，数据存浏览器 localStorage）              */
 /* ====================================================================== */
 // 龙头库（来自 MSCI China Technology All Shares 成分股，去重后作为「＋个股」自动补全）
 const LEADER_POOL = ["阿里巴巴","腾讯控股","宁德时代","小米集团","京东集团","百度集团","比亚迪","工业富联","长江电力","寒武纪","网易","吉利汽车","快手","阳光电源","理想汽车","东方财富","蔚来","中际旭创","洛阳钼业","美的集团","迈瑞医疗","盐湖股份","新易盛","联想集团","胜宏科技","京东健康","兆易创新","贝壳","隆基绿能","亿纬锂能","海光信息","蓝思科技","万华化学","BOSS直聘","赣锋锂业","华友钴业","金山办公","韦尔股份","腾讯音乐","潍柴动力","领益智造","江波龙","德业股份","同花顺","汇川技术","光启技术","小鹏汽车","三峡能源","天赐材料","联影医疗","天孚通信","歌尔股份","天齐锂业","舜宇光学科技","晶科能源","阿里健康","正泰电器","三六零","哔哩哔哩","华勤技术","比亚迪电子","零跑汽车","国轩高科","德赛西威","中国联通","国投电力","中国核电","浪潮信息","润泽科技","浙能电力","赛力斯","地平线","通威股份","阿特斯","京东方","特变电工","华虹半导体","长电科技","沪硅产业","大华股份","紫光股份","鹏鼎控股","生益科技","藏格矿业","科大讯飞","格力电器","川投能源","紫光国微","上海电气","拓荆科技","瑞芯微","宇通客车","时代电气","复星医药","上海电力","华虹公司"];
 
 function covMk(n){ return {n:n, owner:'', status:''}; }
+// 商业航天（新增主题，排在医药前面）
+const COV_SPACE_THEME = {name:'商业航天', subs:[
+  {name:'火箭/发射', stocks:['SpaceX（未上市）','蓝箭航天（未上市）','中科宇航（未上市）'].map(covMk)},
+  {name:'卫星制造/载荷', stocks:['中国卫星','铖昌科技','臻镭科技','上海瀚讯'].map(covMk)},
+  {name:'卫星互联网/运营', stocks:['中国卫通','海格通信','华测导航'].map(covMk)},
+]};
+// 北美科技（覆盖看板最下方）：费半 / 纳指重点 / 北美AI核心公司
+const COV_NA_THEME = {name:'北美科技', subs:[
+  {name:'费城半导体指数 SOX', stocks:[
+    '英伟达 NVDA','AMD','博通 AVGO','台积电 TSM','阿斯麦 ASML','高通 QCOM','德州仪器 TXN',
+    '英特尔 INTC','美光 MU','应用材料 AMAT','泛林集团 LRCX','科磊 KLAC','迈威尔 MRVL',
+    '亚德诺 ADI','恩智浦 NXPI','安森美 ON','微芯科技 MCHP','格芯 GFS','Coherent COHR',
+    '芯源系统 MPWR','泰瑞达 TER','思佳讯 SWKS','Qorvo QRVO','莱迪思 LSCC','Astera Labs ALAB'
+  ].map(covMk)},
+  {name:'纳斯达克重点成分', stocks:[
+    '苹果 AAPL','微软 MSFT','谷歌 GOOGL','亚马逊 AMZN','Meta META','特斯拉 TSLA',
+    '奈飞 NFLX','好市多 COST','拼多多 PDD','Palantir PLTR','Adobe ADBE','AppLovin APP'
+  ].map(covMk)},
+  {name:'北美AI重点公司', stocks:[
+    '谷歌 GOOGL','英伟达 NVDA','博通 AVGO','Coherent COHR','Lumentum LITE','康宁 GLW',
+    '特斯拉 TSLA','SpaceX（未上市）','OpenAI（未上市）','微软 MSFT','Meta META','亚马逊 AMZN',
+    '甲骨文 ORCL','超微电脑 SMCI','戴尔 DELL','Arista ANET','Vertiv VRT','CoreWeave CRWV',
+    'Credo CRDO','AMD','迈威尔 MRVL','台积电 TSM'
+  ].map(covMk)},
+]};
 function defaultCoverage(){
   return { themes:[
     {name:'AI', subs:[
@@ -1652,25 +1818,68 @@ function defaultCoverage(){
       {name:'算力芯片', stocks:['寒武纪','海光信息','工业富联'].map(covMk)},
       {name:'存储', stocks:['兆易创新','江波龙'].map(covMk)},
     ]},
+    {name:'具身智能', subs:[
+      {name:'本体/总成', stocks:[]},
+      {name:'核心零部件（丝杠/减速器/传感器）', stocks:[]},
+    ]},
     {name:'能源革命', subs:[
       {name:'锂电池', stocks:['宁德时代','亿纬锂能','国轩高科'].map(covMk)},
       {name:'锂矿', stocks:['天齐锂业','赣锋锂业','盐湖股份'].map(covMk)},
       {name:'光伏/逆变器', stocks:['阳光电源','隆基绿能','德业股份'].map(covMk)},
     ]},
-    {name:'具身智能', subs:[
-      {name:'本体/总成', stocks:[]},
-      {name:'核心零部件（丝杠/减速器/传感器）', stocks:[]},
-    ]},
+    JSON.parse(JSON.stringify(COV_SPACE_THEME)),
     {name:'医药', subs:[
       {name:'创新药', stocks:[]},
       {name:'医疗器械', stocks:['迈瑞医疗','联影医疗'].map(covMk)},
     ]},
+    JSON.parse(JSON.stringify(COV_NA_THEME)),
   ]};
 }
 let coverage; try{ coverage = JSON.parse(localStorage.getItem('ty_coverage')) || defaultCoverage(); }catch(_){ coverage = defaultCoverage(); }
+// 老数据迁移：补商业航天 / 北美科技主题，并按新顺序排（AI→具身智能→能源革命→商业航天→医药）
+(function migrateCoverage(){
+  let changed=false;
+  const names=()=>coverage.themes.map(t=>t.name);
+  if(!names().includes('商业航天')){
+    const mi=names().indexOf('医药');
+    const sp=JSON.parse(JSON.stringify(COV_SPACE_THEME));
+    mi>=0 ? coverage.themes.splice(mi,0,sp) : coverage.themes.push(sp);
+    changed=true;
+  }
+  if(!names().includes('北美科技')){
+    coverage.themes.push(JSON.parse(JSON.stringify(COV_NA_THEME)));
+    changed=true;
+  }
+  // 按规定顺序重排已知主题；自定义主题保持原相对顺序排在后面，北美科技永远垫底
+  const ORDER=['AI','具身智能','能源革命','商业航天','医药'];
+  const known=ORDER.map(n=>coverage.themes.find(t=>t.name===n)).filter(Boolean);
+  const rest=coverage.themes.filter(t=>!ORDER.includes(t.name) && t.name!=='北美科技');
+  const na=coverage.themes.find(t=>t.name==='北美科技');
+  const next=[...known,...rest,...(na?[na]:[])];
+  if(JSON.stringify(next.map(t=>t.name))!==JSON.stringify(names())){ coverage.themes=next; changed=true; }
+  if(changed) saveCoverage();
+})();
 function saveCoverage(){ localStorage.setItem('ty_coverage', JSON.stringify(coverage)); }
 let covCollapsed = new Set();
 let covAdding = null; // 'ti-si' 正在添加个股的细分
+// 覆盖看板内筛选：关键词 / 观点评级 / 覆盖状态 / 负责人
+const covF = { kw:'', op:'', state:'', owner:'' };
+function covFActive(){ return !!(covF.kw || covF.op || covF.state || covF.owner); }
+function covFSet(field,val){ covF[field]=val; render(); }
+function covFClear(){ covF.kw=''; covF.op=''; covF.state=''; covF.owner=''; render(); }
+function covStockPass(st){
+  if(covF.kw && !covNorm(st.n).toLowerCase().includes(covNorm(covF.kw).toLowerCase())) return false;
+  if(covF.op && (st.status||'（待评）')!==covF.op && !(covF.op==='（待评）'&&!st.status)) return false;
+  if(covF.owner && st.owner!==covF.owner) return false;
+  if(covF.state){
+    const ss=covStat(st.n);
+    const stale = ss.count>0 && (Date.now()-ss.latestTs)/864e5 > COV_STOCK_STALE_DAYS;
+    if(covF.state==='缺口' && ss.count!==0) return false;
+    if(covF.state==='已覆盖' && ss.count===0) return false;
+    if(covF.state==='超期' && !stale) return false;
+  }
+  return true;
+}
 
 const COV_STOCK_STALE_DAYS = 180; // 个股超过 6 个月未更新 → 提醒
 const COV_SUB_STALE_DAYS   = 60;  // 细分超过 2 个月无人更新 → 提醒
@@ -1699,6 +1908,7 @@ function covStat(name){
 }
 function renderCoverage(){
   const board=document.getElementById('board');
+  const kwFocused=document.activeElement && document.activeElement.id==='covKw';
   const dl='<datalist id="leaderPool">'+LEADER_POOL.map(n=>`<option value="${escapeHtml(n)}"></option>`).join('')+'</datalist>';
   let html=dl+'<div class="cov-view">';
   html+=`<div class="cov-toolbar">
@@ -1710,8 +1920,25 @@ function renderCoverage(){
         <button class="cov-mini" onclick="covAddTheme()">＋ 主题</button>
       </span>
     </div>`;
+  // 筛选栏：按个股名 / 观点评级 / 覆盖状态 / 负责人过滤
+  const opSel=['','（待评）','值得细化','非常看好','没什么意思']
+    .map(o=>`<option value="${o}"${covF.op===o?' selected':''}>${o||'全部观点'}</option>`).join('');
+  const stateSel=['','缺口','已覆盖','超期']
+    .map(o=>`<option value="${o}"${covF.state===o?' selected':''}>${o||'全部状态'}</option>`).join('');
+  const ownerSel=['<option value="">全部负责人</option>'].concat(users.map(u=>
+    `<option value="${u.n}"${covF.owner===u.n?' selected':''}>${u.n}</option>`)).join('');
+  html+=`<div class="cov-filterbar">
+      <span class="filter-label">筛选</span>
+      <input class="search" id="covKw" style="width:170px" placeholder="🔍 个股名 / 代码…" value="${escapeHtml(covF.kw)}" oninput="covF.kw=this.value;render()">
+      <select onchange="covFSet('op',this.value)">${opSel}</select>
+      <select onchange="covFSet('state',this.value)">${stateSel}</select>
+      <select onchange="covFSet('owner',this.value)">${ownerSel}</select>
+      ${covFActive()?'<span class="clear-filter" style="cursor:pointer;color:var(--accent);font-size:12px" onclick="covFClear()">✕ 清除筛选</span>':''}
+    </div>`;
   coverage.themes.forEach((th,ti)=>{
-    const tkey='t'+ti, tcol=covCollapsed.has(tkey);
+    // 筛选生效时：只显示有命中个股的主题/细分，并强制展开
+    if(covFActive() && !th.subs.some(s=>s.stocks.some(covStockPass))) return;
+    const tkey='t'+ti, tcol=!covFActive() && covCollapsed.has(tkey);
     let total=0, covered=0;
     th.subs.forEach(s=>s.stocks.forEach(st=>{ total++; if(covPostsFor(st.n).length>0) covered++; }));
     const pct=total?Math.round(covered/total*100):0;
@@ -1728,7 +1955,8 @@ function renderCoverage(){
       <div class="cov-theme-body">`;
     if(th.subs.length===0) html+=`<div class="cov-empty">还没有细分，点「＋ 细分」添加。</div>`;
     th.subs.forEach((sub,si)=>{
-      const skey='t'+ti+'s'+si, scol=covCollapsed.has(skey);
+      if(covFActive() && !sub.stocks.some(covStockPass)) return;
+      const skey='t'+ti+'s'+si, scol=!covFActive() && covCollapsed.has(skey);
       // 细分聚合：覆盖数、最近更新、更新过本板块的人
       let subLatest=0, scov=0; const subAuth=new Set();
       sub.stocks.forEach(st=>{ const ss=covStat(st.n); if(ss.count>0) scov++; if(ss.latestTs>subLatest) subLatest=ss.latestTs; ss.authors.forEach(a=>subAuth.add(a)); });
@@ -1749,6 +1977,7 @@ function renderCoverage(){
         <div class="cov-sub-body">`;
       if(sub.stocks.length===0 && covAdding!==ti+'-'+si) html+=`<div class="cov-empty">暂无个股</div>`;
       sub.stocks.forEach((st,sti)=>{
+        if(covFActive() && !covStockPass(st)) return;
         const ss=covStat(st.n);
         const stStale = ss.count>0 && (Date.now()-ss.latestTs)/864e5 > COV_STOCK_STALE_DAYS;
         let badge, meta='';
@@ -1783,6 +2012,7 @@ function renderCoverage(){
   html+='</div>';
   board.innerHTML=html;
   if(covAdding){ const el=document.getElementById('covAddInput'); if(el) el.focus(); }
+  if(kwFocused){ const el=document.getElementById('covKw'); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
 }
 function covToggle(key){ covCollapsed.has(key)?covCollapsed.delete(key):covCollapsed.add(key); render(); }
 function covAddTheme(){ const n=prompt('新主题名称（如 AI、能源革命）'); if(n&&n.trim()){ coverage.themes.push({name:n.trim(),subs:[]}); saveCoverage(); render(); } }
@@ -1943,7 +2173,7 @@ async function loadFramework(){
   if(layoutMode==='framework') render();
 }
 function rfThemes(){
-  const base=['AI','能源革命','具身智能','医药'];
+  const base=['AI','具身智能','能源革命','商业航天','医药'];
   const extra=[...new Set(rf.map(r=>r.theme))].filter(t=>t && !base.includes(t));
   return base.concat(extra);
 }
@@ -2041,7 +2271,7 @@ async function rfQuickPost(){
   const ta=document.getElementById('rfQuickTxt');
   const txt=(ta.value||'').trim();
   if(!txt){ ta.focus(); return; }
-  const themeL1={'AI':'电子','能源革命':'新能源','具身智能':'电子','医药':'医药'};
+  const themeL1={'AI':'电子','具身智能':'电子','能源革命':'新能源','商业航天':'通信','医药':'医药'};
   const row={ author:myName, l0:rfTheme, l1:themeL1[rfTheme]||'综合',
     l2:[], stock:'', source:null, body:txt, images:[], pdfs:[] };
   try{
@@ -2125,7 +2355,12 @@ async function rfSave(){
 async function rfDelete(id){
   const it=rf.find(r=>r.id===id); if(!it) return;
   if(!confirm('确认删除这条？\n\n'+((it.title?it.title+'：':'')+(it.content||'')).slice(0,60))) return;
-  try{ const { error } = await sb.from('research_framework').delete().eq('id', id); if(error) throw error; await loadFramework(); }
+  try{
+    const { data: delRows, error } = await sb.from('research_framework').delete().eq('id', id).select('id');
+    if(error) throw error;
+    if(!delRows || delRows.length===0){ alert('删除没有生效：数据库缺少 research_framework 的删除权限，请在 Supabase SQL Editor 重跑【升级补丁-6-行业研究框架.sql】。'); return; }
+    await loadFramework();
+  }
   catch(e){ alert('删除失败：'+(e.message||e)); }
 }
 document.addEventListener('keydown',(e)=>{
@@ -2584,9 +2819,15 @@ async function deletePost(p){
       catch(e){ console.warn('附件清理失败（已忽略，继续删主记录）:', e); }
     }
 
-    // 2) 删主记录
-    const { error } = await sb.from('posts').delete().eq('id', p.id);
+    // 2) 删主记录（带 .select 拿回真正被删的行：RLS 没开删除权限时
+    //    Supabase 不报错、只是删了 0 行——必须显式检测，否则刷新后"复活"）
+    const { data: delRows, error } = await sb.from('posts').delete().eq('id', p.id).select('id');
     if(error) throw error;
+    if(!delRows || delRows.length===0){
+      alert('删除没有生效（数据库没开"允许删除"权限，这就是删掉的条目刷新后又回来的原因）。\n\n修复方法（管理员做一次即可）：\n登录 supabase.com → 本项目 → SQL Editor → 粘贴运行文件夹里的【升级补丁-开启删除.sql】→ Run。\n\n之后删除就会真正生效。');
+      loadPosts();
+      return;
+    }
 
     // 3) 本地状态收尾
     selected.delete(p.id);
