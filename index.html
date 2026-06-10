@@ -746,6 +746,7 @@
     background: #fafbfc; border: 1px solid var(--border); border-left: 3px solid #c7d2fe;
     border-radius: 8px; padding: 5px 10px; margin: 4px 0 8px;
   }
+  .cov-sub-body .cr-hist { margin-left: 36px; }
   .cr-hist-row { display: flex; gap: 8px; align-items: center; font-size: 11.5px; padding: 3.5px 0; }
   .cr-hist-row + .cr-hist-row { border-top: 1px dashed #eceef2; }
   .cr-hist-row .r { font-weight: 700; color: var(--crc); white-space: nowrap; min-width: 58px; }
@@ -773,7 +774,7 @@
   .cov-sub-head { display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; }
   .cov-sub-head .nm { font-weight: 700; font-size: 13.5px; }
   .cov-sub.collapsed .cov-sub-body { display: none; }
-  .cov-stock { display: flex; align-items: center; gap: 8px; padding: 4px 0 4px 18px; font-size: 12.5px; flex-wrap: wrap; }
+  .cov-stock { display: flex; align-items: center; gap: 8px; padding: 4px 0 4px 36px; font-size: 12.5px; flex-wrap: wrap; }
   .cov-stock .nm { min-width: 104px; font-weight: 500; }
   .cov-badge { font-size: 11px; border-radius: 10px; padding: 1px 9px; cursor: pointer; white-space: nowrap; }
   .cov-badge.ok { background: #dcfce7; color: #15803d; }
@@ -1999,15 +2000,15 @@ function crBadgeHtml(level,target,legacy){
   }
   const open=covRateOpen.has(crKey(level,target));
   return `<span class="cr-badge" style="--crc:${CR_COLORS[latest.rating]||'#6b7280'}"
-    title="${escapeHtml(tip)} · 共 ${list.length} 条，点击${open?'收起':'展开'}历史"
+    title="${escapeHtml(tip)} · 点击${open?'收起':'展开'}更早的 ${list.length-1} 条记录"
     onclick="event.stopPropagation();crToggleHist('${escapeHtml(level)}','${escapeHtml(target)}')">
     ${escapeHtml(latest.rating)}<span class="who">· ${escapeHtml(latest.author)} · ${covAgo(Date.parse(latest.created_at))}</span>
-    <span class="chev3">${open?'▴':'▾'} ${list.length}</span></span>${add}`;
+    <span class="chev3">${open?'▴':'▾'} ${list.length-1}</span></span>${add}`;
 }
-// 展开态：通讯记录式的历史列表（最新在上）
+// 展开态：通讯记录式的历史列表——最新一条已在徽章上，这里只列更早的记录
 function crHistHtml(level,target){
   if(!covRateOpen.has(crKey(level,target))) return '';
-  const list=crFor(level,target);
+  const list=crFor(level,target).slice(1);
   if(!list.length) return '';
   const rows=list.map(r=>`<div class="cr-hist-row" style="--crc:${CR_COLORS[r.rating]||'#6b7280'}">
       <span class="r">${escapeHtml(r.rating)}</span>
