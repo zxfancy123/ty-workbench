@@ -762,16 +762,16 @@
   .cr-opt.on { border-color: var(--co); color: var(--co); background: #fff; font-weight: 700; box-shadow: 0 0 0 1px var(--co) inset; }
   .cov-legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
   .cov-theme { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
-  .cov-theme-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #f7f7f9; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .cov-theme-head .nm { font-weight: 700; font-size: 14px; }
+  .cov-theme-head { display: flex; align-items: center; gap: 9px; padding: 13px 16px; background: #f7f7f9; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .cov-theme-head .nm { font-weight: 700; font-size: 15.5px; }
   .cov-sum { font-size: 11px; color: var(--muted); }
   .cov-bar { height: 6px; width: 84px; background: #eceef2; border-radius: 4px; overflow: hidden; }
   .cov-bar i { display: block; height: 100%; background: #16a34a; }
   .cov-theme-body { padding: 8px 14px 12px; }
   .cov-theme.collapsed .cov-theme-body { display: none; }
   .cov-sub { margin: 8px 0 8px 4px; border-left: 2px solid #e9ebef; padding-left: 14px; }
-  .cov-sub-head { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
-  .cov-sub-head .nm { font-weight: 600; font-size: 12.5px; }
+  .cov-sub-head { display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; }
+  .cov-sub-head .nm { font-weight: 700; font-size: 13.5px; }
   .cov-sub.collapsed .cov-sub-body { display: none; }
   .cov-stock { display: flex; align-items: center; gap: 8px; padding: 4px 0 4px 18px; font-size: 12.5px; flex-wrap: wrap; }
   .cov-stock .nm { min-width: 104px; font-weight: 500; }
@@ -1980,7 +1980,7 @@ function crToggleHist(level,target){
   covRateOpen.has(k)?covRateOpen.delete(k):covRateOpen.add(k);
   render();
 }
-// 折叠态：只显示最新一条「评级 · 谁 · 何时 ▾」；点徽章下拉看历史
+// 折叠态：只显示最新一条「评级 · 谁 · 何时」；有 2 条以上历史才出现 ▾，点开下拉看历史
 function crBadgeHtml(level,target,legacy){
   const list=crFor(level,target);
   const latest=list[0];
@@ -1989,12 +1989,20 @@ function crBadgeHtml(level,target,legacy){
     if(legacy) return `<span class="cr-badge" style="--crc:${CR_COLORS[legacy]||'#6b7280'}" title="旧版本地评级（无记录人），点＋评级补一条云端记录">${escapeHtml(legacy)} · 旧</span>${add}`;
     return add;
   }
+  const tip=(latest.note?'「'+latest.note+'」 · ':'')+new Date(latest.created_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+  if(list.length===1){
+    // 只有一条：徽章即全部信息，悬停看理由，点击直接添加新评级
+    return `<span class="cr-badge" style="--crc:${CR_COLORS[latest.rating]||'#6b7280'}"
+      title="${escapeHtml(tip)}（点击添加我的评级）"
+      onclick="event.stopPropagation();openCovRate('${escapeHtml(level)}','${escapeHtml(target)}')">
+      ${escapeHtml(latest.rating)}<span class="who">· ${escapeHtml(latest.author)} · ${covAgo(Date.parse(latest.created_at))}</span></span>${add}`;
+  }
   const open=covRateOpen.has(crKey(level,target));
   return `<span class="cr-badge" style="--crc:${CR_COLORS[latest.rating]||'#6b7280'}"
-    title="${list.length} 条评级记录，点击${open?'收起':'展开'}历史"
+    title="${escapeHtml(tip)} · 共 ${list.length} 条，点击${open?'收起':'展开'}历史"
     onclick="event.stopPropagation();crToggleHist('${escapeHtml(level)}','${escapeHtml(target)}')">
     ${escapeHtml(latest.rating)}<span class="who">· ${escapeHtml(latest.author)} · ${covAgo(Date.parse(latest.created_at))}</span>
-    <span class="chev3">${open?'▴':'▾'}${list.length>1?' '+list.length:''}</span></span>${add}`;
+    <span class="chev3">${open?'▴':'▾'} ${list.length}</span></span>${add}`;
 }
 // 展开态：通讯记录式的历史列表（最新在上）
 function crHistHtml(level,target){
@@ -2033,7 +2041,6 @@ async function saveCovRate(){
     const { error } = await sb.from('cov_ratings').insert({
       level:crLevel, target:crTarget, author:myName, rating:crPick, note:note||null });
     if(error) throw error;
-    covRateOpen.add(crKey(crLevel,crTarget));   // 评完顺手展开，能看到自己这条
     closeCovRate(); await loadCovRatings();
   }catch(e){ alert('保存失败：'+(e.message||e)); }
   finally{ btn.disabled=false; btn.textContent='保存'; }
@@ -2127,9 +2134,9 @@ function renderCoverage(){
       <div class="cov-theme-head" onclick="covToggle('${tkey}')">
         <span class="chev2 t">▼</span>
         <span class="nm">${escapeHtml(th.name)}</span>
+        ${crBadgeHtml('theme',th.name)}
         <span class="cov-sum">${covered}/${total} 龙头已覆盖</span>
         <span class="cov-bar"><i style="width:${pct}%"></i></span>
-        ${crBadgeHtml('theme',th.name)}
         <span style="flex:1"></span>
         <button class="cov-mini" onclick="event.stopPropagation();covAddSub(${ti})">＋ 细分</button>
         <span class="cov-x" title="删除主题" onclick="event.stopPropagation();covDelTheme(${ti})">🗑</span>
@@ -2150,10 +2157,10 @@ function renderCoverage(){
         <div class="cov-sub-head" onclick="covToggle('${skey}')">
           <span class="chev2 s">▼</span>
           <span class="nm">${escapeHtml(sub.name)}</span>
+          ${crBadgeHtml('sub',subTgt)}
           <span class="cov-sum">${sub.stocks.length} 只 · ${scov} 已覆盖</span>
           ${subWarn}
           ${subPeople}
-          ${crBadgeHtml('sub',subTgt)}
           <span style="flex:1"></span>
           <button class="cov-mini" onclick="event.stopPropagation();covStartAdd(${ti},${si})">＋ 个股</button>
           <span class="cov-x" title="删除细分" onclick="event.stopPropagation();covDelSub(${ti},${si})">🗑</span>
@@ -2175,9 +2182,9 @@ function renderCoverage(){
         html+=`<div class="cov-stock${stStale?' stale':''}">
           <span class="nm">${escapeHtml(st.n)}</span>
           ${badge}
+          ${crBadgeHtml('stock',st.n,st.status)}
           ${meta}
           <span style="flex:1"></span>
-          ${crBadgeHtml('stock',st.n,st.status)}
           <select title="负责人" onchange="covSet(${ti},${si},${sti},'owner',this.value)">${ownerOpts}</select>
           <span class="cov-x" title="移除个股" onclick="covDelStock(${ti},${si},${sti})">✕</span>
         </div>${crHistHtml('stock',st.n)}`;
