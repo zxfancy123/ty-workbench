@@ -1360,7 +1360,23 @@ async function loadPosts(){
   status.textContent='● 云端已连接'; status.className='cloud-status ok';
   posts = data.map(normalize);
   render();
+  consumeDeepLink();
 }
+/* —— #post=<id> 直达链接：首次加载完成后自动打开对应条目详情 —— */
+let deepLinkDone=false;
+function consumeDeepLink(){
+  if(deepLinkDone) return;
+  deepLinkDone=true;
+  const m=location.hash.match(/^#post=([0-9a-fA-F-]{36})$/);
+  if(!m) return;
+  const p=posts.find(x=>x.id===m[1]);
+  if(p) openDetail(p);
+  else toast('链接指向的条目不存在或已被删除');
+}
+window.addEventListener('hashchange',()=>{
+  deepLinkDone=false;
+  if(posts.length) consumeDeepLink();
+});
 function showConnError(error){
   const msg=(error&&(error.message||error.hint||error.details))||String(error);
   let cause='请按下面三点逐一排查。';
@@ -2954,6 +2970,7 @@ function renderDetail(){
     <div class="spacer" style="flex:1;"></div>
     <button class="btn" id="dLike">${meLiked?'♥ 已赞':'♡ 点赞'}</button>
     <button class="btn" id="dCopy">📋 复制到微信</button>
+    <button class="btn" id="dLink">🔗 复制链接</button>
     <button class="btn ${isSelected?'primary':''}" id="dSel">${isSelected?'✓ 已选入分析':'☑ 选入 AI 分析'}</button>
     ${isOwner ? '<button class="btn" id="dEdit">✏️ 编辑</button>' : ''}
     ${isOwner ? '<button class="btn danger" id="dDel">🗑️ 删除</button>' : ''}
@@ -2962,6 +2979,12 @@ function renderDetail(){
   document.getElementById('dNext').onclick=()=>detailGoto(1);
   document.getElementById('dLike').onclick=async()=>{ await toggleLike(p); renderDetail(); };
   document.getElementById('dCopy').onclick=()=>copyToWx(p);
+  document.getElementById('dLink').onclick=()=>{
+    const url=location.origin+location.pathname+'#post='+p.id;
+    navigator.clipboard.writeText(url)
+      .then(()=>toast('✓ 链接已复制'))
+      .catch(()=>prompt('手动复制链接：',url));
+  };
   document.getElementById('dSel').onclick =()=>{ toggleSelect(p.id); renderDetail(); };
   const dDel=document.getElementById('dDel');
   if(dDel) dDel.onclick=async()=>{ await deletePost(p); if(!posts.find(x=>x.id===p.id)) closeDetail(); };
