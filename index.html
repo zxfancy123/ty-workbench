@@ -1407,6 +1407,7 @@ function normalize(r){
     stock:r.stock||'', source:r.source||'', text:r.body||'',
     images:r.images||[], pdfs:r.pdfs||[],
     link:r.wx_link||'', linkTitle:r.wx_title||'',
+    attachText:r.attach_text||'',
     likes:r.likes||[], time:fmtTime(r.created_at), ts:Date.parse(r.created_at)
   };
 }
@@ -1447,6 +1448,40 @@ async function manualRefresh(){
     },500);
   }
   toast('✓ 已刷新');
+}
+/* —— 附件全文检索：发布时用 pdf.js 在浏览器端提取 PDF 文本，存入 posts.attach_text —— */
+let pdfjsReady=null;
+function loadPdfJs(){
+  if(pdfjsReady) return pdfjsReady;
+  pdfjsReady=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+    s.onload=()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'; res(window.pdfjsLib); };
+    s.onerror=()=>rej(new Error('pdf.js 加载失败'));
+    document.head.appendChild(s);
+  });
+  return pdfjsReady;
+}
+async function extractPdfText(file, cap=60000){
+  try{
+    const pdfjs=await loadPdfJs();
+    const doc=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;
+    let out='';
+    for(let i=1; i<=doc.numPages && out.length<cap; i++){
+      const tc=await (await doc.getPage(i)).getTextContent();
+      out+=tc.items.map(it=>it.str).join(' ')+'\n';
+    }
+    return out.replace(/[ \t]+/g,' ').trim().slice(0,cap);
+  }catch(e){
+    console.warn('PDF 文本提取失败（不影响发布）：', file.name, e);
+    return '';
+  }
+}
+/* 附件里的 md/txt 直接读文本 */
+async function extractAttachText(file){
+  if(/\.pdf$/i.test(file.name)) return extractPdfText(file);
+  if(/\.(md|txt)$/i.test(file.name)) return file.text().catch(()=>'');
+  return '';
 }
 async function uploadFile(file){
   const safe=file.name.replace(/[^\w.\-]/g,'_');
@@ -1578,7 +1613,7 @@ function passFilter(p){
   if(F.author.size && !F.author.has(p.author)) return false;
   if(F.stock.size  && !F.stock.has(p.stock)) return false;
   if(F.l2.size     && !p.l2.some(t=>F.l2.has(t))) return false;
-  if(kw && !((p.stock||'').includes(kw) || (p.text||'').includes(kw))) return false;
+  if(kw && !((p.stock||'').includes(kw) || (p.text||'').includes(kw) || (p.attachText||'').includes(kw))) return false;
   return true;
 }
 function render(){
@@ -3479,7 +3514,14 @@ async function publishPost(){
       images.push(await uploadFile(optimized));
     }
     const pdfs=[];
-    for(const f of pickedPdfs){ pdfs.push({name:f.name,url:await uploadFile(f)}); }
+    let newAttachText='';
+    for(const f of pickedPdfs){
+      btn.textContent='提取附件文本…';
+      const t=await extractAttachText(f);
+      if(t) newAttachText+=`【${f.name}】 ${t}\n`;
+      btn.textContent=editingPost?'保存中…':'发布中…';
+      pdfs.push({name:f.name,url:await uploadFile(f)});
+    }
     const wx=document.getElementById('wxLink').value.trim();
     const wxT=document.getElementById('wxTitle').value.trim();
     const row={
@@ -3495,14 +3537,20 @@ async function publishPost(){
       wx_link: wx || null,
       wx_title: wxT || null
     };
-    if(editingPost){
-      const { error } = await sb.from('posts').update(row).eq('id', editingPost.id);
-      if(error) throw error;
-      toast('✓ 修改已保存');
-    } else {
-      const { error } = await sb.from('posts').insert(row);
-      if(error) throw error;
+    // 附件全文检索：合并旧文本与新提取文本（字段未建时自动降级重试）
+    const prevAttach = editingPost ? (editingPost.attachText||'') : '';
+    if(newAttachText || prevAttach) row.attach_text=(prevAttach+newAttachText).slice(0,100000);
+    const writeRow=async()=> editingPost
+      ? await sb.from('posts').update(row).eq('id', editingPost.id)
+      : await sb.from('posts').insert(row);
+    let res=await writeRow();
+    if(res.error && ('attach_text' in row) && /attach_text/i.test(res.error.message||'')){
+      delete row.attach_text;
+      res=await writeRow();
+      if(!res.error) toast('⚠ 附件全文检索未启用：请在 Supabase 运行升级补丁-8');
     }
+    if(res.error) throw res.error;
+    if(editingPost) toast('✓ 修改已保存');
     closeModal(); resetModal(); loadPosts();
   }catch(e){
     alert((editingPost?'保存':'发布')+'失败：'+(e.message||e));
