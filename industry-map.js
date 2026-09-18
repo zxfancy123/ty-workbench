@@ -1,13 +1,14 @@
 /* One cloud row per node: independent revisions avoid overwriting a teammate's branch. */
 const IM_KIND='industry-map-v1';
 const IM_TYPES={sector:{name:'板块',color:'#8979ca',children:['industry','analyst']},industry:{name:'细分行业',color:'#7593be',children:['industry','stock','analyst']},stock:{name:'个股',color:'#68a18d',children:['model','analyst']},analyst:{name:'券商研究员',color:'#c49c64',children:[]},model:{name:'个股模型',color:'#7b9fbc',children:[]}};
-let imRows=[],imLoaded=false,imError='',imLoading=null,imKeyword='',imSector='',imZoom=1,imBusy=false;
+let imRows=[],imAllRows=[],imLastDeleted=null,imLoaded=false,imError='',imLoading=null,imKeyword='',imSector='',imZoom=1,imBusy=false;
 const imCollapsed=new Set();
 const imX=row=>row.extra||{};
 const imEsc=rtEscape;
 function imUrl(value) {try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
 function imName(row) {const x=imX(row);return x.type==='analyst'?[x.broker,row.title].filter(Boolean).join(' · '):row.title||'未命名';}
 function imChildren(id,rows=imRows) {return rows.filter(r=>imX(r).parentId===id);}
+function imRefreshActive(){const hidden=new Set(imAllRows.filter(r=>imX(r).deletedAt).map(r=>r.id));for(let i=0;i<imAllRows.length;i++){let changed=false;for(const r of imAllRows)if(hidden.has(imX(r).parentId)&&!hidden.has(r.id)){hidden.add(r.id);changed=true;}if(!changed)break;}imRows=imAllRows.filter(r=>!hidden.has(r.id));}
 function imVisibleRows() {
   let rows=imRows;
   if(imSector) {
@@ -32,17 +33,17 @@ async function loadIndustryMap() {
         const {data,error}=await sb.from('research_framework').select('*').eq('extra->>kind',IM_KIND).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
         if(error)throw error;rows.push(...(data||[]));if(!data||data.length<500)break;
       }
-      imRows=rows;imLoaded=true;imError='';
+      imAllRows=rows;imRefreshActive();imLoaded=true;imError='';
     }catch(e){imError='地图同步失败，请重试。'+(e.message||e);}
     finally{imLoading=null;if(layoutMode==='industry-map')renderIndustryMap();}
   })();return imLoading;
 }
 function imCard(row,children) {
   const x=imX(row),type=IM_TYPES[x.type]||IM_TYPES.industry;
-  const actions=type.children.map(t=>`<button class="im-action" data-add="${t}">＋ ${t==='analyst'?'研究员':IM_TYPES[t].name}</button>`).join('');
+  const actions=type.children.filter(t=>!(x.type==='industry'&&t==='analyst')).map(t=>`<button class="im-action" data-add="${t}">＋ ${t==='analyst'?'研究员':t==='stock'?'个股 / 研究员':IM_TYPES[t].name}</button>`).join('');
   const attachments=(x.files||[]).filter(f=>imUrl(f.url)).map(f=>`<a class="im-file" target="_blank" rel="noopener noreferrer" href="${imEsc(imUrl(f.url))}">↗ ${imEsc(f.name)}</a>`).join('');
   return `<article class="im-card" data-id="${imEsc(row.id)}" data-type="${imEsc(x.type)}" style="--im-color:${type.color}">
-    <div class="im-kind">${type.name}<button class="im-edit" data-edit aria-label="编辑${imEsc(imName(row))}">编辑</button></div>
+    <div class="im-kind">${type.name}<button class="im-edit" data-edit aria-label="编辑${imEsc(imName(row))}">编辑</button><button class="im-delete" data-delete aria-label="删除${imEsc(imName(row))}">删除</button></div>
     <div class="im-name">${imEsc(imName(row))}</div>${x.code?`<div class="im-detail">${imEsc(x.code)}</div>`:''}
     ${row.content?`<div class="im-detail">${imEsc(row.content)}</div>`:''}
     ${imUrl(x.link)?`<a class="im-file" target="_blank" rel="noopener noreferrer" href="${imEsc(imUrl(x.link))}">↗ 打开模型链接</a>`:''}${attachments}
@@ -72,6 +73,7 @@ function renderIndustryMap() {
     <div class="im-canvas" tabindex="0" aria-label="横向行业树，可上下左右滚动"><div class="im-tree" style="--im-zoom:${imZoom}"><ul class="im-roots">${roots.map(r=>imBranch(r,byParent)).join('')}</ul></div>
     ${!roots.length?`<div class="im-empty"><div class="im-empty-flow"><span>电子</span>→<span>存储</span>→<span>个股 / 研究员 / 模型</span></div><h2>${!imLoaded?'正在同步行业地图…':imRows.length?'没有找到匹配的内容':'从一个板块，开始搭建研究地图'}</h2><p>${imRows.length?'换个关键词，或切换到全部板块。':'分类可以不断细化；每位研究员、每份模型，都有自己的位置和填写日期。'}</p>${!imRows.length&&imLoaded&&!imError?'<div class="im-tools"><button class="btn primary" id="imEmptyAdd">＋ 添加第一个板块</button><button class="btn" id="imExample">使用电子分类起步</button></div><p class="im-hint">电子分类起步：MLCC、存储、芯片设计、设备。</p>':''}</div>`:''}</div>
     <div class="im-bottom"><span>${imError?'同步异常':imLoaded?'● 团队云端同步':'连接中…'}</span><span>${sectors.length} 个板块 · ${imRows.filter(r=>imX(r).type==='industry').length} 个细分行业 · ${imRows.filter(r=>imX(r).type==='stock').length} 只个股 · ${imRows.filter(r=>imX(r).type==='analyst').length} 条研究员记录</span><span>日期均为北京时间 · 横向滚动查看分支</span><div class="im-zoom"><button id="imZoomOut" aria-label="缩小">−</button><span>${Math.round(imZoom*100)}%</span><button id="imZoomIn" aria-label="放大">＋</button></div></div>`;
+  if(imLastDeleted&&imAllRows.some(r=>r.id===imLastDeleted&&imX(r).deletedAt)){const b=document.createElement('button');b.className='btn';b.id='imUndoDelete';b.textContent='撤销上次删除';b.onclick=imUndoDelete;board.querySelector('.im-top .im-tools').prepend(b);}
   board.querySelector('#imAddRoot').onclick=()=>imOpen('sector',null);
   board.querySelector('#imEmptyAdd')?.addEventListener('click',()=>imOpen('sector',null));
   board.querySelector('#imExample')?.addEventListener('click',imSeed);
@@ -85,7 +87,8 @@ function renderIndustryMap() {
   board.querySelector('#imZoomIn').onclick=()=>{imZoom=Math.min(1.5,Math.round((imZoom+.1)*10)/10);renderIndustryMap();};
   board.querySelectorAll('.im-card').forEach(card=>{
     card.querySelector('[data-edit]').onclick=()=>imOpen(null,null,card.dataset.id);
-    card.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>imOpen(b.dataset.add,card.dataset.id));
+    card.querySelector('[data-delete]').onclick=()=>imDelete(card.dataset.id);
+    card.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>b.dataset.add==='stock'?imOpenCombined(card.dataset.id):imOpen(b.dataset.add,card.dataset.id));
     card.querySelector('[data-toggle]')?.addEventListener('click',()=>{imCollapsed.has(card.dataset.id)?imCollapsed.delete(card.dataset.id):imCollapsed.add(card.dataset.id);renderIndustryMap();});
   });
   const canvas=board.querySelector('.im-canvas');canvas.scrollLeft=scroll[0];canvas.scrollTop=scroll[1];
@@ -100,7 +103,7 @@ async function imPersist(row,patch,extra) {
   const {data,error}=await sb.from('research_framework').update({...patch,extra:next,updated_at:next.editedAt}).eq('id',row.id).eq('extra->>kind',IM_KIND).eq('extra->>revision',imX(row).revision).select('*');
   if(error)throw error;
   if(!data?.length){await loadIndustryMap();throw new Error('这条记录已被其他人更新。你的输入仍在，请复制后关闭窗口，查看最新内容再编辑。');}
-  imRows=imRows.map(r=>r.id===row.id?data[0]:r);return data[0];
+  imAllRows=imAllRows.map(r=>r.id===row.id?data[0]:r);imRefreshActive();return data[0];
 }
 function imNewRow(type,parentId,title,extra={},content='',id=crypto.randomUUID()) {
   return {id,theme:'行业研究地图',section:'tracking',title,content,author:myName,extra:{kind:IM_KIND,type,parentId,revision:crypto.randomUUID(),...extra}};
@@ -108,7 +111,7 @@ function imNewRow(type,parentId,title,extra={},content='',id=crypto.randomUUID()
 async function imInsert(rows) {
   const {data,error}=await sb.from('research_framework').insert(rows).select('*');
   if(error)throw error;if(!data?.length)throw new Error('没有收到保存结果，请刷新后检查。');
-  const incoming=new Set(data.map(r=>r.id));imRows=[...imRows.filter(r=>!incoming.has(r.id)),...data];
+  const incoming=new Set(data.map(r=>r.id));imAllRows=[...imAllRows.filter(r=>!incoming.has(r.id)),...data];imRefreshActive();
   return data;
 }
 async function imSeed() {
@@ -116,6 +119,37 @@ async function imSeed() {
   const root=imNewRow('sector',null,'电子');
   try{await imInsert([root,...['MLCC','存储','芯片设计','设备'].map(n=>imNewRow('industry',root.id,n))]);toast('✓ 已添加电子及四个细分行业');}
   catch(e){alert('添加失败：'+(e.message||e));}finally{imBusy=false;renderIndustryMap();}
+}
+async function imDelete(id){
+  if(imBusy)return;await loadIndustryMap();if(imError){alert(imError);return;}const row=imRows.find(r=>r.id===id);if(!row)return;
+  const branch=new Set([id]);for(let i=0;i<imRows.length;i++){let changed=false;for(const r of imRows)if(branch.has(imX(r).parentId)&&!branch.has(r.id)){branch.add(r.id);changed=true;}if(!changed)break;}
+  if(!confirm(`删除「${imName(row)}」${branch.size>1?'及其下方全部分支（当前共 '+branch.size+' 条记录）':''}？\n删除后会从团队地图中移除，可通过“撤销上次删除”恢复。`))return;
+  imBusy=true;try{await imPersist(row,{}, {deletedAt:new Date().toISOString(),deletedBy:myName});imLastDeleted=id;toast('✓ 已删除，可撤销上次删除');}catch(e){alert('删除失败：'+(e.message||e));}finally{imBusy=false;renderIndustryMap();}
+}
+async function imUndoDelete(){if(imBusy||!imLastDeleted)return;const row=imAllRows.find(r=>r.id===imLastDeleted);if(!row)return;imBusy=true;try{await imPersist(row,{}, {deletedAt:null,deletedBy:null});imLastDeleted=null;toast('✓ 已恢复');}catch(e){alert('恢复失败：'+(e.message||e));}finally{imBusy=false;renderIndustryMap();}}
+async function imCheckParent(parentId){
+  const seen=new Set();let id=parentId;
+  while(id&&!seen.has(id)){seen.add(id);const {data,error}=await sb.from('research_framework').select('*').eq('id',id).eq('extra->>kind',IM_KIND).maybeSingle();if(error)throw error;if(!data||imX(data).deletedAt)throw new Error('所属分类已被删除，请关闭窗口刷新地图后重试。');id=imX(data).parentId;}
+}
+function imOpenCombined(parentId){
+  const parent=imRows.find(r=>r.id===parentId);if(!parent)return;
+  let dialog=document.getElementById('imDialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='imDialog';dialog.className='im-dialog';document.body.appendChild(dialog);}
+  dialog.innerHTML=`<form id="imForm"><h2 id="imDialogTitle">添加个股与研究员</h2><div class="im-dialog-sub">所属：${imEsc(imName(parent))} · 可同时添加个股和多位券商研究员；不填个股时，研究员直接归入这个行业。</div><div class="im-split"><div><label for="imTitle">个股名称（可选）</label><input id="imTitle" maxlength="200" placeholder="输入股票名称"></div><div><label for="imCode">股票代码 / 市场（可选）</label><input id="imCode" maxlength="80" placeholder="代码 · A 股 / 港股 / 美股"></div></div><label for="imNote">个股说明（可选）</label><textarea id="imNote" maxlength="30000" placeholder="补充个股的关注点…"></textarea><div class="im-joint-heading">对应的券商研究员 <button type="button" class="im-action" id="imMorePerson">＋ 再添一位</button></div><div id="imJointPeople"></div><div class="im-form-error" id="imFormError" role="alert"></div><div class="im-dialog-foot"><button type="button" class="btn" id="imCancel">取消</button><button type="submit" class="btn primary" id="imSave">一起保存</button></div></form>`;
+  dialog.setAttribute('aria-labelledby','imDialogTitle');
+  function addPerson(){const wrap=document.createElement('div');wrap.className='im-joint-person';wrap.innerHTML='<div class="im-split"><label>券商名称<input data-broker maxlength="100" placeholder="例如：某某证券"></label><label>研究员姓名<input data-person maxlength="200" placeholder="研究员姓名"></label></div><label>擅长方向 / 推荐理由<input data-note maxlength="1000" placeholder="可选"></label><button type="button" class="im-action">移除这一位</button>';wrap.querySelector('button').onclick=()=>wrap.remove();dialog.querySelector('#imJointPeople').appendChild(wrap);}
+  addPerson();dialog.querySelector('#imMorePerson').onclick=addPerson;dialog.querySelector('#imCancel').onclick=()=>{if(!imBusy)dialog.close();};dialog.oncancel=e=>{if(imBusy)e.preventDefault();};
+  dialog.querySelector('#imForm').onsubmit=async e=>{
+    e.preventDefault();if(imBusy)return;const title=dialog.querySelector('#imTitle').value.trim(),code=dialog.querySelector('#imCode').value.trim(),note=dialog.querySelector('#imNote').value.trim();
+    const people=[...dialog.querySelectorAll('.im-joint-person')].map(el=>({broker:el.querySelector('[data-broker]').value.trim(),name:el.querySelector('[data-person]').value.trim(),note:el.querySelector('[data-note]').value.trim()})).filter(p=>p.broker||p.name||p.note);
+    const err=dialog.querySelector('#imFormError');err.textContent='';
+    if(people.some(p=>!p.broker||!p.name)){err.textContent='每位研究员请同时填写券商和姓名。';return;}
+    if(!title&&!people.length){err.textContent='请填写个股，或至少填写一位券商研究员。';return;}
+    if(!title&&(code||note)){err.textContent='填写个股代码或说明时，请同时填写个股名称。';return;}
+    const stock=title?imNewRow('stock',parentId,title,{code},note):null,rows=stock?[stock]:[];
+    people.forEach(p=>rows.push(imNewRow('analyst',stock?.id||parentId,p.name,{broker:p.broker},p.note)));
+    imBusy=true;const controls=[...dialog.querySelectorAll('button,input,textarea')];controls.forEach(el=>el.disabled=true);dialog.querySelector('#imSave').textContent='保存中…';
+    try{await imCheckParent(parentId);await imInsert(rows);imCollapsed.delete(parentId);dialog.close();toast('✓ 个股与研究员已一起保存');renderIndustryMap();}catch(e){err.textContent='保存失败：'+(e.message||e);}finally{imBusy=false;controls.forEach(el=>el.disabled=false);dialog.querySelector('#imSave').textContent='一起保存';}
+  };dialog.showModal();
 }
 function imOpen(type,parentId,id) {
   const row=id?imRows.find(r=>r.id===id):null;if(id&&!row)return;
@@ -152,6 +186,7 @@ function imOpen(type,parentId,id) {
     imBusy=true;const controls=[...dialog.querySelectorAll('button,input,textarea')];controls.forEach(el=>el.disabled=true);dialog.querySelector('#imSave').textContent='保存中…';
     const uploaded=[];
     try {
+      if(parentId)await imCheckParent(parentId);
       for(const file of files){
         if(!/\.(xlsx|xls|csv|pdf)$/i.test(file.name)||!file.size||file.size>20*1024*1024)throw new Error('请上传非空的 Excel、CSV 或 PDF 文件，每个不超过 20 MB。');
         if(/\.pdf$/i.test(file.name))await rtValidatePdf(file);

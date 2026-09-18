@@ -39,6 +39,10 @@ body.im-active .filterbar,body.im-active #aiPanel {display:none}
 .im-meta {font-size:10px;color:#9ba2af;line-height:1.8;margin-top:11px}
 .im-edit,.im-action {border:0;background:transparent;font:inherit;cursor:pointer;padding:0;color:#8d94a3;font-size:10px}
 .im-edit:hover,.im-action:hover {color:#5c4cbd;text-decoration:underline}
+.im-delete {border:0;background:transparent;padding:0;font:inherit;font-size:10px;cursor:pointer;color:#b08989;}
+.im-delete:hover {color:#bb5151;text-decoration:underline;}
+.im-joint-heading {margin-top:20px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;}
+.im-joint-person {margin-top:10px;padding:4px 13px 12px;background:#faf9fd;border:1px solid #e6e1f0;border-radius:8px;}
 .im-actions {display:flex;gap:11px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid #edf0f5}
 .im-action {color:#7968b9;font-size:11px}
 .im-toggle {position:absolute;right:-11px;top:calc(50% - 11px);border:1px solid #d5dbea;border-radius:50%;background:#fff;width:22px;height:22px;color:#8b83a6;cursor:pointer;font-size:11px;z-index:1}
