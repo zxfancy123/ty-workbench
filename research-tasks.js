@@ -247,12 +247,12 @@ function rtMarkdown(rows=rtRows.filter(r=>!rtExtra(r).archived)) {
   const lines=['# 研究任务','',`导出时间：${rtTime(new Date().toISOString())}（北京时间）`,`任务总数：${rows.length} · 待承接：${rows.filter(r=>rtStatus(r)==='pending').length} · 研究中：${rows.filter(r=>rtStatus(r)==='active').length} · 已交付：${rows.filter(r=>rtStatus(r)==='done').length}`,'','| 研究问题 | 细分行业 | 承接研究员 | 承接时间 | 总结论 | 交付研究员 | 交付结果 | 交付日期 | 交付用时 |','| --- | --- | --- | --- | --- | --- | --- | --- | --- |'];
   rows.forEach(r=>{
     const x=rtExtra(r), links=(x.pdfs||[]).filter(p=>rtSafeUrl(p.url)).map(p=>`[${rtMd(p.name)}](<${rtSafeUrl(p.url).replace(/>/g,'%3E').replace(/</g,'%3C')}>)`);
-    lines.push(`| ${rtMd(r.title)} | ${rtMd(x.industry)} | ${rtMd(x.owner||'待承接')} | ${rtTime(x.acceptedAt)} | ${rtMd(x.deliverySummary||'—')} | ${rtMd(x.deliveredBy||(x.deliveredAt?'未记录':'—'))} | ${[rtMd(x.deliveryText),...links].filter(Boolean).join('<br>')||'尚未交付'} | ${rtTime(x.deliveredAt)} | ${rtDurationText(rtDuration(r))} |`);
+    lines.push(`| ${rtMd(r.title)} | ${rtMd(x.industry)} | ${rtMd(x.owner||'待承接')} | ${rtTime(x.acceptedAt)} | ${rtMd(x.deliverySummary||'—')} | ${rtMd(x.deliveredBy||(x.deliveredAt?'未记录':'—'))} | ${[rtMd(x.deliveryText),...links].filter(Boolean).join('<br>')||(x.deliveredAt?'仅总结论':'尚未交付')} | ${rtTime(x.deliveredAt)} | ${rtDurationText(rtDuration(r))} |`);
   });
   lines.push('','## 任务详情','');
   rows.forEach((r,i)=>{
     const x=rtExtra(r);
-    lines.push(`### ${i+1}. ${rtMd(r.title)}`,'',`- 状态：${rtStatusName(r)}`,`- 提出人：${rtMd(r.author)}`,`- 提出时间：${rtTime(r.created_at)}`,`- 细分行业：${rtMd(x.industry)}`,`- 承接研究员：${rtMd(x.owner||'待承接')}`,`- 承接时间：${rtTime(x.acceptedAt)}`,`- 总结论：${rtMd(x.deliverySummary||'—')}`,`- 交付研究员：${rtMd(x.deliveredBy||'未记录')}`,`- 交付用时：${rtDurationText(rtDuration(r))}`,`- 交付日期：${rtTime(x.deliveredAt)}`,'','**交付结果**','',x.deliveryText?rtMd(x.deliveryText):'尚无文字结果','');
+    lines.push(`### ${i+1}. ${rtMd(r.title)}`,'',`- 状态：${rtStatusName(r)}`,`- 提出人：${rtMd(r.author)}`,`- 提出时间：${rtTime(r.created_at)}`,`- 细分行业：${rtMd(x.industry)}`,`- 承接研究员：${rtMd(x.owner||'待承接')}`,`- 承接时间：${rtTime(x.acceptedAt)}`,`- 总结论：${rtMd(x.deliverySummary||'—')}`,`- 交付研究员：${rtMd(x.deliveredBy||'未记录')}`,`- 交付用时：${rtDurationText(rtDuration(r))}`,`- 交付日期：${rtTime(x.deliveredAt)}`,'','**交付结果**','',x.deliveryText?rtMd(x.deliveryText):'无补充文字','');
     (x.pdfs||[]).forEach(p=>{const url=rtSafeUrl(p.url);if(url)lines.push(`- PDF：[${rtMd(p.name)}](<${url.replace(/>/g,'%3E').replace(/</g,'%3C')}>)`);});
     lines.push('');
   });
