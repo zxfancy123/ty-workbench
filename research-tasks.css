@@ -1,0 +1,80 @@
+/* Research tasks: shares the workbench login, team, database and attachments. */
+body.tasks-active header { height:auto; min-height:58px; padding:12px 22px; flex-wrap:wrap; }
+body.tasks-active header > button { display:none; }
+body.tasks-active header > #homeBtn, body.tasks-active header > #tasksBtn, body.tasks-active header > #frameworkBtn, body.tasks-active header > #coverageBtn, body.tasks-active header > #refreshBtn, body.tasks-active header > button:last-child { display:flex; }
+body.tasks-active .filterbar, body.tasks-active #aiPanel { display:none; }
+.board.tasks-mode { display:block; overflow:auto; padding:32px; background:#f5f6fa; }
+.rt-wrap { max-width:1600px; margin:0 auto; }
+.rt-eyebrow { color:#7c8192; font-size:11px; letter-spacing:2px; margin-bottom:10px; }
+.rt-heading { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:25px; }
+.rt-heading h1 { font-size:27px; letter-spacing:-.6px; font-weight:700; }
+.rt-heading p { color:#73798a; font-size:13px; margin-top:9px; line-height:1.7; }
+.rt-actions { display:flex; gap:9px; flex-wrap:wrap; }
+.rt-actions .btn { height:37px; }
+.rt-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:25px; }
+.rt-stat { padding:18px 21px; background:white; border:1px solid #e6e8ef; border-radius:11px; display:flex; align-items:center; justify-content:space-between; }
+.rt-stat strong { font-size:27px; font-weight:650; }
+.rt-stat span { color:#777e8d; font-size:12px; }
+.rt-stat i { display:block; width:7px; height:7px; border-radius:50%; margin-bottom:9px; background:#8991a2; }
+.rt-panel { background:white; border:1px solid #e3e6ee; border-radius:12px; overflow:hidden; box-shadow:0 3px 14px #1c264003; }
+.rt-task-toolbar { padding:16px 18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #e9ebf1; }
+.rt-tabs { display:flex; gap:4px; margin-right:auto; }
+.rt-tab { border:0; background:transparent; border-radius:6px; padding:8px 12px; font:inherit; cursor:pointer; color:#777e8d; }
+.rt-tab.on { color:#4f46e5; background:#eeedff; font-weight:600; }
+.rt-task-toolbar .search { width:220px; height:34px; }
+.rt-task-toolbar select { height:34px; max-width:180px; }
+.rt-scroll { overflow:auto; }
+.rt-task-table { width:100%; border-collapse:collapse; table-layout:fixed; min-width:1100px; }
+.rt-task-table th { font-weight:500; text-align:left; font-size:11px; color:#7c8192; background:#fafbfe; padding:13px 16px; border-bottom:1px solid #e9ebf1; }
+.rt-task-table td { padding:21px 16px; border-bottom:1px solid #eef0f5; vertical-align:top; line-height:1.65; font-size:12px; }
+.rt-task-table tbody tr:last-child td { border-bottom:0; }
+.rt-task-table tbody tr:hover { background:#fcfcff; }
+.rt-task-table select { width:100%; height:32px; background:#fafbfe; }
+.rt-question { white-space:pre-wrap; overflow-wrap:anywhere; color:#252a39; font-size:13px; font-weight:600; }
+.rt-meta { color:#9298a5; font-size:10px; margin-top:8px; }
+.rt-status { display:inline-block; border-radius:4px; padding:1px 6px; margin-right:5px; background:#f0f2f6; color:#788093; font-size:10px; font-weight:400; }
+.rt-status.active { background:#eeedff; color:#6256cf; }
+.rt-status.done { background:#e9f7ef; color:#238c5e; }
+.rt-link { border:0; background:none; color:#655bcc; font:inherit; font-size:11px; padding:0; cursor:pointer; text-decoration:none; }
+.rt-link:hover { text-decoration:underline; }
+.rt-muted { color:#9298a5; }
+.rt-date { font-variant-numeric:tabular-nums; color:#5c6475; white-space:nowrap; }
+.rt-result { white-space:pre-wrap; overflow-wrap:anywhere; color:#62697a; max-height:116px; overflow:auto; }
+.rt-pdf { display:block; color:#6256cf; font-size:11px; text-decoration:none; margin:7px 0; overflow-wrap:anywhere; }
+.rt-foot { border-top:1px solid #e9ebf1; padding:13px 18px; color:#9096a4; font-size:11px; display:flex; justify-content:space-between; gap:16px; }
+.rt-note { margin-top:15px; color:#8b92a1; font-size:11px; line-height:1.8; }
+.rt-empty { padding:65px 20px; text-align:center; color:#8b92a1; }
+.rt-empty b { display:block; font-size:15px; color:#454d61; margin:10px; }
+.rt-error { background:#fff4ee; color:#a04d28; padding:14px 18px; margin-bottom:16px; border-radius:8px; line-height:1.7; }
+.rt-dialog { border:1px solid #e4e7ef; border-radius:15px; box-shadow:0 24px 80px #20234430; padding:27px; width:min(570px,calc(100vw - 32px)); max-height:90vh; margin:auto; color:var(--text); }
+.rt-dialog::backdrop { background:#18223a66; }
+.rt-dialog h2 { font-size:19px; margin-bottom:7px; }
+.rt-dialog p { line-height:1.7; color:#858b99; font-size:12px; margin-bottom:18px; }
+.rt-dialog label { display:block; color:#606879; font-size:12px; margin:15px 0 7px; }
+.rt-dialog textarea, .rt-dialog select, .rt-dialog input[type=text] { width:100%; border:1px solid #dfe3ed; border-radius:7px; padding:10px; font:inherit; }
+.rt-dialog textarea { resize:vertical; min-height:125px; line-height:1.7; }
+.rt-dialog select { padding:0 10px; height:38px; }
+.rt-dialog input[type=file] { width:100%; padding:14px; border:1px dashed #cac5ee; border-radius:7px; font:inherit; background:#faf9ff; }
+.rt-dialog .rt-actions { justify-content:flex-end; margin-top:22px; }
+.rt-dialog .rt-form-error { color:#c14444; margin-top:12px; white-space:pre-wrap; }
+.rt-dialog .rt-split { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.rt-dialog .rt-existing { margin-top:9px; color:#677084; font-size:12px; }
+.rt-dialog .rt-existing label { margin:5px 0; overflow-wrap:anywhere; }
+.rt-dialog .rt-existing input { margin-right:6px; }
+.rt-dialog .rt-danger { margin-right:auto; color:#b65252; }
+.rt-dialog :focus-visible, .rt-wrap :focus-visible { outline:2px solid #8174e8; outline-offset:3px; }
+@media(max-width:700px) {
+  .board.tasks-mode { padding:20px 14px; }
+  .rt-heading { align-items:flex-start; flex-direction:column; gap:15px; }
+  .rt-heading h1 { font-size:23px; }
+  .rt-stats { grid-template-columns:repeat(2,1fr); gap:9px; }
+  .rt-stat { padding:14px; }
+  .rt-task-toolbar { padding:12px; }
+  .rt-tabs { width:100%; }
+  .rt-task-toolbar .search { width:100%; }
+  .rt-task-toolbar select { flex:1; max-width:none; min-width:0; }
+  .rt-foot { flex-direction:column; gap:5px; }
+  body.tasks-active header { padding:10px 14px; gap:7px; }
+  body.tasks-active header .logo { width:100%; }
+  body.tasks-active header .btn { font-size:11px; padding:0 9px; }
+}

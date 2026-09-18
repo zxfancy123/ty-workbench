@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>投研协作台</title>
+<link rel="stylesheet" href="research-tasks.css" />
 <!-- Supabase 客户端（云数据库 SDK） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -845,6 +846,7 @@
   <button class="btn" id="calBtn" onclick="switchMode('calendar')" title="按月历查看大家每天上传了什么主题的信息">📅 日历</button>
   <button class="btn" id="coverageBtn" onclick="toggleCoverage()" title="研究覆盖看板（拆缺补漏 / 进度）">🗺️ 研究覆盖</button>
   <button class="btn" id="frameworkBtn" onclick="goMode('framework')" title="行业研究框架（协同工作流）">🧭 框架</button>
+  <button class="btn" id="tasksBtn" onclick="goMode('tasks')" title="研究问题、任务承接与成果交付">☑ 研究任务</button>
   <button class="btn" id="homeBtn" onclick="goMode('home')" title="开始页面">🏠 首页</button>
   <button class="btn" onclick="openStats()" title="查看每个人的输出条数">📊 统计</button>
   <button class="btn" onclick="openExport()">⬇ 导出</button>
@@ -1354,7 +1356,7 @@ async function loadPosts(){
   if(error){
     status.textContent='● 云端连接失败'; status.className='cloud-status bad';
     console.error(error);
-    showConnError(error);
+    if(layoutMode!=='tasks') showConnError(error);
     return;
   }
   status.textContent='● 云端已连接'; status.className='cloud-status ok';
@@ -1418,7 +1420,7 @@ function subscribeRealtime(){
     .subscribe();
   // 行业研究框架实时同步
   sb.channel('rf-rt')
-    .on('postgres_changes',{event:'*',schema:'public',table:'research_framework'},()=>loadFramework())
+    .on('postgres_changes',{event:'*',schema:'public',table:'research_framework'},()=>{loadFramework();loadResearchTasks();})
     .subscribe();
   // 覆盖看板评级记录实时同步
   sb.channel('cr-rt')
@@ -2314,6 +2316,11 @@ function renderHome(){
       </div>
       ${todoHtml}
       <div class="home-cards">
+        <div class="home-card" onclick="goMode('tasks')">
+          <div class="hc-ico" style="background:linear-gradient(135deg,#6256cf,#a395ed)">☑</div>
+          <div class="hc-t">研究任务</div>
+          <div class="hc-d">提出问题、选择细分行业、研究员承接，提交文字或 PDF 研究结果，一键导出 Markdown。</div>
+        </div>
         <div class="home-card" onclick="goMode('grid')">
           <div class="hc-ico" style="background:linear-gradient(135deg,#4f46e5,#818cf8)">📋</div>
           <div class="hc-t">观点协作台</div>
@@ -2405,8 +2412,8 @@ function rfPostRef(p){
 async function loadFramework(){
   if(!sb) return;
   try{
-    const { data, error } = await sb.from('research_framework').select('*').order('created_at',{ascending:true});
-    if(error){ rfError=error; } else { rf=data||[]; rfError=null; }
+    const { data, error } = await sb.from('research_framework').select('*').or('extra->>kind.is.null,extra->>kind.neq.research-task-v1').order('created_at',{ascending:true});
+    if(error){ rfError=error; } else { rf=(data||[]).filter(r=>r.extra?.kind!=='research-task-v1'); rfError=null; }
   }catch(e){ rfError=e; }
   rfLoaded=true;
   if(layoutMode==='framework') render();
@@ -3761,7 +3768,8 @@ function downloadExport(){
 }
 
 /* ====================================================================== */
-init();
 </script>
+<script src="research-tasks.js"></script>
+<script>init();</script>
 </body>
 </html>
