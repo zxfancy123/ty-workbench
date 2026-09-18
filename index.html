@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>投研协作台</title>
 <link rel="stylesheet" href="research-tasks.css" />
+<link rel="stylesheet" href="industry-map.css" />
 <!-- Supabase 客户端（云数据库 SDK） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -1356,7 +1357,7 @@ async function loadPosts(){
   if(error){
     status.textContent='● 云端连接失败'; status.className='cloud-status bad';
     console.error(error);
-    if(layoutMode!=='tasks') showConnError(error);
+    if(layoutMode!=='tasks'&&layoutMode!=='industry-map') showConnError(error);
     return;
   }
   status.textContent='● 云端已连接'; status.className='cloud-status ok';
@@ -1420,7 +1421,7 @@ function subscribeRealtime(){
     .subscribe();
   // 行业研究框架实时同步
   sb.channel('rf-rt')
-    .on('postgres_changes',{event:'*',schema:'public',table:'research_framework'},()=>{loadFramework();loadResearchTasks();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'research_framework'},()=>{loadFramework();loadResearchTasks();if(layoutMode==='industry-map')loadIndustryMap();})
     .subscribe();
   // 覆盖看板评级记录实时同步
   sb.channel('cr-rt')
@@ -2316,6 +2317,11 @@ function renderHome(){
       </div>
       ${todoHtml}
       <div class="home-cards">
+        <div class="home-card" onclick="goMode('industry-map')">
+          <div class="hc-ico" style="background:linear-gradient(135deg,#8979ca,#b3a5e1)">⌘</div>
+          <div class="hc-t">行业研究地图</div>
+          <div class="hc-d">横向梳理板块、细分行业、个股与模型，持续补充券商研究员，每条记录自动标注填写日期。</div>
+        </div>
         <div class="home-card" onclick="goMode('tasks')">
           <div class="hc-ico" style="background:linear-gradient(135deg,#6256cf,#a395ed)">☑</div>
           <div class="hc-t">研究任务</div>
@@ -2412,8 +2418,8 @@ function rfPostRef(p){
 async function loadFramework(){
   if(!sb) return;
   try{
-    const { data, error } = await sb.from('research_framework').select('*').or('extra->>kind.is.null,extra->>kind.neq.research-task-v1').order('created_at',{ascending:true});
-    if(error){ rfError=error; } else { rf=(data||[]).filter(r=>r.extra?.kind!=='research-task-v1'); rfError=null; }
+    const { data, error } = await sb.from('research_framework').select('*').or('extra->>kind.is.null,and(extra->>kind.neq.research-task-v1,extra->>kind.neq.industry-map-v1)').order('created_at',{ascending:true});
+    if(error){ rfError=error; } else { rf=(data||[]).filter(r=>!['research-task-v1','industry-map-v1'].includes(r.extra?.kind)); rfError=null; }
   }catch(e){ rfError=e; }
   rfLoaded=true;
   if(layoutMode==='framework') render();
@@ -3770,6 +3776,7 @@ function downloadExport(){
 /* ====================================================================== */
 </script>
 <script src="research-tasks.js"></script>
+<script src="industry-map.js"></script>
 <script>init();</script>
 </body>
 </html>
