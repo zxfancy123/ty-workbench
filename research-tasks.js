@@ -4,7 +4,7 @@
  */
 const RT_KIND = 'research-task-v1';
 let rtRows = [], rtLoaded = false, rtError = '', rtLoading = null;
-let rtFilter = {status:'all', industry:'', owner:'', keyword:''};
+let rtFilter = {status:'all', industry:'', owner:'', keyword:'', sort:'desc'};
 const rtBusy = new Set();
 let rtDialogBusy = false;
 let rtRendering = false;
@@ -37,6 +37,12 @@ function rtVisible() {
       && (!rtFilter.industry || x.industry===rtFilter.industry)
       && (!rtFilter.owner || x.owner===rtFilter.owner)
       && (!kw || [r.title,x.industry,x.owner,x.deliverySummary,x.deliveredBy,x.deliveryText,...(x.pdfs||[]).map(p=>p.name)].join(' ').toLocaleLowerCase().includes(kw));
+  }).sort((a,b) => {
+    const timeA=Date.parse(a.created_at), timeB=Date.parse(b.created_at);
+    if(!Number.isFinite(timeA)) return Number.isFinite(timeB)?1:0;
+    if(!Number.isFinite(timeB)) return -1;
+    const order=timeA-timeB || String(a.id).localeCompare(String(b.id));
+    return rtFilter.sort==='asc'?order:-order;
   });
 }
 async function loadResearchTasks() {
@@ -69,7 +75,7 @@ function rtFilesHtml(pdfs) {
 function rtRowHtml(row,index) {
   const x=rtExtra(row), busy=rtBusy.has(row.id), done=rtStatus(row)==='done';
   return `<tr data-id="${rtEscape(row.id)}">
-    <td><div class="rt-question">${rtEscape(row.title)}</div><div class="rt-meta"><span class="rt-status ${rtStatus(row)}">${rtStatusName(row)}</span> ${String(index+1).padStart(2,'0')} · ${rtEscape(row.author)} 提出</div><button class="rt-link" data-action="edit" ${busy?'disabled':''}>编辑问题</button></td>
+    <td><div class="rt-question">${rtEscape(row.title)}</div><div class="rt-meta"><span class="rt-status ${rtStatus(row)}">${rtStatusName(row)}</span> ${String(index+1).padStart(2,'0')} · ${rtEscape(row.author)} 提出 · ${rtEscape(rtTime(row.created_at))}</div><button class="rt-link" data-action="edit" ${busy?'disabled':''}>编辑问题</button></td>
     <td><input aria-label="细分行业" data-field="industry" list="rtIndustriesList" maxlength="60" value="${rtEscape(x.industry||'')}" placeholder="输入或选择行业" ${busy?'disabled':''}></td>
     <td><select aria-label="承接研究员" data-field="owner" ${busy||done?'disabled':''} title="${done?'已交付任务保留原承接人':'选择后自动记录当前承接时间'}">${rtOptions(users.map(u=>u.n),x.owner,'待承接')}</select></td>
     <td class="rt-date">${rtEscape(rtTime(x.acceptedAt)).replace(' ','<br>')}<div class="rt-meta">${x.acceptedAt?'自动记录':'选择研究员后记录'}</div></td>
@@ -92,7 +98,7 @@ function renderResearchTasks() {
     <div class="rt-heading"><div><h1>研究任务</h1><p>把值得研究的问题留下来，让每一次探索都有回应。</p></div><div class="rt-actions"><button class="btn" id="rtExport" ${!rtLoaded||rtError?'disabled':''}>↓ 导出 Markdown</button><button class="btn primary" id="rtNew" ${!rtLoaded||rtError?'disabled':''}>＋ 添加问题</button></div></div>
     <div class="rt-stats">${[['全部任务',active.length,'#8a91a3'],['待承接',active.filter(r=>rtStatus(r)==='pending').length,'#b69b60'],['研究中',active.filter(r=>rtStatus(r)==='active').length,'#7664dd'],['已交付',active.filter(r=>rtStatus(r)==='done').length,'#4da67d']].map(([label,n,color])=>`<div class="rt-stat"><span><i style="background:${color}"></i>${label}</span><strong>${rtLoaded?n:'—'}</strong></div>`).join('')}</div>
     ${rtError?`<div class="rt-error" role="alert">${rtEscape(rtError)} <button class="rt-link" id="rtRetry">重新同步</button></div>`:''}
-    <section class="rt-panel" aria-label="研究任务清单"><div class="rt-task-toolbar"><div class="rt-tabs" role="group" aria-label="任务状态">${[['all','全部'],['pending','待承接'],['active','研究中'],['done','已交付']].map(([s,n])=>`<button class="rt-tab ${rtFilter.status===s?'on':''}" data-status="${s}" aria-pressed="${rtFilter.status===s}">${n}</button>`).join('')}</div><input class="search" id="rtSearch" aria-label="搜索任务" placeholder="搜索问题、交付结果…" value="${rtEscape(rtFilter.keyword)}"><select id="rtIndustryFilter" aria-label="筛选细分行业">${rtOptions(rtIndustries(),rtFilter.industry,'全部细分行业')}</select><select id="rtOwnerFilter" aria-label="筛选研究员">${rtOptions(users.map(u=>u.n),rtFilter.owner,'全部研究员')}</select></div>
+    <section class="rt-panel" aria-label="研究任务清单"><div class="rt-task-toolbar"><div class="rt-tabs" role="group" aria-label="任务状态">${[['all','全部'],['pending','待承接'],['active','研究中'],['done','已交付']].map(([s,n])=>`<button class="rt-tab ${rtFilter.status===s?'on':''}" data-status="${s}" aria-pressed="${rtFilter.status===s}">${n}</button>`).join('')}</div><input class="search" id="rtSearch" aria-label="搜索任务" placeholder="搜索问题、交付结果…" value="${rtEscape(rtFilter.keyword)}"><select id="rtIndustryFilter" aria-label="筛选细分行业">${rtOptions(rtIndustries(),rtFilter.industry,'全部细分行业')}</select><select id="rtOwnerFilter" aria-label="筛选研究员">${rtOptions(users.map(u=>u.n),rtFilter.owner,'全部研究员')}</select><select id="rtSort" aria-label="按提出时间排序"><option value="desc" ${rtFilter.sort==='desc'?'selected':''}>提出时间：新到旧</option><option value="asc" ${rtFilter.sort==='asc'?'selected':''}>提出时间：旧到新</option></select></div>
     <div class="rt-scroll"><table class="rt-task-table"><colgroup><col style="width:21%"><col style="width:12%"><col style="width:10%"><col style="width:12%"><col style="width:23%"><col style="width:12%"><col style="width:10%"></colgroup><thead><tr><th scope="col">研究问题</th><th scope="col">细分行业</th><th scope="col">承接研究员</th><th scope="col">承接时间</th><th scope="col">交付信息 / 结果</th><th scope="col">交付日期</th><th scope="col">交付用时</th></tr></thead><tbody>${list.map(rtRowHtml).join('')}</tbody></table></div>
     ${!list.length?`<div class="rt-empty"><b>${!rtLoaded?'正在同步任务…':active.length?'没有符合条件的任务':'从一个好问题开始'}</b>${!rtLoaded?'':active.length?'试试其他关键词或筛选条件。':'点击「添加问题」，选择细分行业，等待研究员承接。'}</div>`:''}
     <div class="rt-foot"><span>显示 ${list.length} / ${active.length} 项任务</span><span>${rtError?'同步异常':rtLoaded?'● 已与团队云端同步':'连接中…'} · 时间均为北京时间</span></div></section>
@@ -103,6 +109,7 @@ function renderResearchTasks() {
   board.querySelector('#rtExport').onclick=rtExport;
   board.querySelector('#rtRetry')?.addEventListener('click',loadResearchTasks);
   board.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>{rtFilter.status=b.dataset.status;renderResearchTasks();});
+  board.querySelector('#rtSort').onchange=e=>{rtFilter.sort=e.target.value;renderResearchTasks();};
   board.querySelector('#rtSearch').oninput=e=>{rtFilter.keyword=e.target.value;renderResearchTasks();};
   board.querySelector('#rtIndustryFilter').onchange=e=>{rtFilter.industry=e.target.value;renderResearchTasks();};
   board.querySelector('#rtOwnerFilter').onchange=e=>{rtFilter.owner=e.target.value;renderResearchTasks();};

@@ -941,10 +941,10 @@
         <div class="counter" id="counter">0 字</div>
       </div>
       <div class="field">
-        <label>附件（PDF / Markdown，可选）</label>
-        <label class="pdf-drop"><input type="file" accept=".pdf,application/pdf,.md,.markdown,text/markdown,text/x-markdown" hidden onchange="pickPdf(this)" multiple>📄 点击导入 PDF 或 📝 Markdown 文件</label>
+        <label>附件（PDF / PPT / Excel / Markdown，可选）</label>
+        <label class="pdf-drop"><input type="file" accept=".pdf,.ppt,.pptx,.xls,.xlsx,.md,.markdown,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/markdown,text/x-markdown" hidden onchange="pickPdf(this)" multiple>📎 点击导入 PDF、PPT、Excel 或 Markdown 文件（可多选）</label>
         <div id="pdfList"></div>
-        <div class="hint">PDF 单文件 ≤ 40MB（约 40 页研报）；Markdown 不限大小</div>
+        <div class="hint">PDF / PPT / Excel 单文件 ≤ 40MB；支持 .ppt、.pptx、.xls、.xlsx；Markdown 不限大小</div>
       </div>
       <div class="field-row">
         <div class="field">
@@ -2632,7 +2632,7 @@ function buildCard(p){
   const l2tags=p.l2.map(t=>`<span class="tag l2">${t}</span>`).join('');
   const pdfTags=(p.pdfs||[]).map(f=>{
     const md=isMdFile(f.name);
-    return `<span class="tag ${md?'md':'pdf'}">${md?'📝':'📄'} ${escapeHtml(f.name)}</span>`;
+    return `<span class="tag ${md?'md':'pdf'}">${attachIcon(f.name)} ${escapeHtml(f.name)}</span>`;
   }).join('');
   const lc=p.likes.length;
   const meLiked=p.likes.includes(myName);
@@ -2975,7 +2975,7 @@ function renderDetail(){
   const l2tags = p.l2.map(t=>`<span class="tag l2">${escapeHtml(t)}</span>`).join('');
   const pdfTags = (p.pdfs||[]).map(f=>{
     const md=isMdFile(f.name);
-    return `<a class="tag ${md?'md':'pdf'}" href="${f.url}" target="_blank" rel="noopener">${md?'📝':'📄'} ${escapeHtml(f.name)}</a>`;
+    return `<a class="tag ${md?'md':'pdf'}" href="${f.url}" target="_blank" rel="noopener">${attachIcon(f.name)} ${escapeHtml(f.name)}</a>`;
   }).join('');
   const linkTag = p.link
     ? `<a class="tag link" href="${p.link}" target="_blank" rel="noopener" title="${escapeHtml(p.link)}">🔗 ${escapeHtml(p.linkTitle||'公众号原文')}</a>`
@@ -3202,7 +3202,7 @@ function buildSelectedMarkdown(){
     if(p.l2 && p.l2.length) lines.push(`- **标签**：${p.l2.join(' / ')}`);
     lines.push(`- **团队点赞**：${p.likes.length}`);
     if(p.link) lines.push(`- **公众号原文**：${p.linkTitle?`[${p.linkTitle}](${p.link})`:p.link}`);
-    if(p.pdfs && p.pdfs.length) lines.push(`- **附件**：${p.pdfs.map(f=>(isMdFile(f.name)?'📝':'📄')+' '+f.name).join('、')}`);
+    if(p.pdfs && p.pdfs.length) lines.push(`- **附件**：${p.pdfs.map(f=>attachIcon(f.name)+' '+f.name).join('、')}`);
     if(p.images && p.images.length) lines.push(`- **配图**：${p.images.length} 张（如需分析图表，请把图片单独上传给 Claude）`);
     lines.push('');
     lines.push('**观点正文：**');
@@ -3304,7 +3304,7 @@ function pickImg(i,input){
   slot.classList.add('filled');
 }
 function isMdFile(name){ return /\.(md|markdown)$/i.test(name||''); }
-function attachIcon(name){ return isMdFile(name) ? '📝' : '📄'; }
+function attachIcon(name){ return isMdFile(name) ? '📝' : /\.pptx?$/i.test(name||'') ? '📊' : /\.xlsx?$/i.test(name||'') ? '📗' : '📄'; }
 const PDF_MAX_BYTES = 40 * 1024 * 1024;   // 40MB，约 40 页研报
 function fmtBytes(b){
   if(b<1024) return b+' B';
@@ -3314,9 +3314,12 @@ function fmtBytes(b){
 function pickPdf(input){
   const rejected=[];
   [...input.files].forEach(f=>{
-    // PDF 检查 40MB；Markdown 不限大小（文本文件本来就小）
-    if(/\.pdf$/i.test(f.name) && f.size > PDF_MAX_BYTES){
-      rejected.push(`${f.name}（${fmtBytes(f.size)}）`);
+    if(!/\.(pdf|ppt|pptx|xls|xlsx|md|markdown)$/i.test(f.name)){
+      rejected.push(`${f.name}（不支持的文件类型）`);
+      return;
+    }
+    if(!f.size || (!isMdFile(f.name) && f.size > PDF_MAX_BYTES)){
+      rejected.push(`${f.name}（文件为空或超过 40MB：${fmtBytes(f.size)}）`);
       return;
     }
     pickedPdfs.push(f);
@@ -3324,9 +3327,7 @@ function pickPdf(input){
   input.value='';
   if(rejected.length){
     alert(
-      'PDF 文件超过 40MB 上限（约 40 页研报的体积），未添加：\n\n'+
-      rejected.join('\n')+
-      '\n\n如确实需要传更大文件，可先用 smallpdf.com / ilovepdf.com 之类工具压缩 PDF 体积后再传。'
+      '以下附件未添加：\n\n'+rejected.join('\n')+'\n\n支持 PDF、PPT、Excel 和 Markdown；PDF / PPT / Excel 单文件不超过 40MB。'
     );
   }
   renderPdfList();
@@ -3339,7 +3340,7 @@ function renderPdfList(){
     if(isMdFile(f.name)){
       d.style.background='#eff6ff'; d.style.borderColor='#bfdbfe'; d.style.color='#1d4ed8';
     }
-    d.innerHTML=`${attachIcon(f.name)} ${f.name}<span class="x">✕</span>`;
+    d.innerHTML=`${attachIcon(f.name)} ${escapeHtml(f.name)}<span class="x">✕</span>`;
     d.querySelector('.x').onclick=()=>{ keptPdfs.splice(i,1); renderPdfList(); };
     el.appendChild(d);
   });
@@ -3348,7 +3349,7 @@ function renderPdfList(){
     if(isMdFile(f.name)){
       d.style.background='#eff6ff'; d.style.borderColor='#bfdbfe'; d.style.color='#1d4ed8';
     }
-    d.innerHTML=`${attachIcon(f.name)} ${f.name}<span class="x">✕</span>`;
+    d.innerHTML=`${attachIcon(f.name)} ${escapeHtml(f.name)}<span class="x">✕</span>`;
     d.querySelector('.x').onclick=()=>{ pickedPdfs.splice(i,1); renderPdfList(); };
     el.appendChild(d);
   });
@@ -3730,7 +3731,7 @@ function buildMarkdown(list, label, isWeekly){
         lines.push(`  ${postPlain(p.text)}`);
         if(tags) lines.push(`  🏷️ ${tags}`);
         if(p.link) lines.push(`  🔗 [${p.linkTitle||'公众号原文'}](${p.link})`);
-        if(p.pdfs && p.pdfs.length) lines.push('  📎 附件：'+p.pdfs.map(f=>`[${(isMdFile(f.name)?'📝':'📄')} ${f.name}](${f.url})`).join('、'));
+        if(p.pdfs && p.pdfs.length) lines.push('  📎 附件：'+p.pdfs.map(f=>`[${attachIcon(f.name)} ${f.name}](${f.url})`).join('、'));
         lines.push('');
       });
     });
@@ -3775,7 +3776,7 @@ function downloadExport(){
 
 /* ====================================================================== */
 </script>
-<script src="research-tasks.js"></script>
+<script src="research-tasks.js?v=20260924"></script>
 <script src="industry-map.js"></script>
 <script>init();</script>
 </body>
